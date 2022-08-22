@@ -37,7 +37,7 @@ object LoliYouWant : KotlinPlugin(
 
         reloadConfig()
         LoliCommand(PermissionService.INSTANCE.register(PERM_RELOAD, "重载配置文件")).register()
-        
+
         globalEventChannel(coroutineContext).subscribeAlways<GroupMessageEvent> {
             if (LoliConfig.at && this.message.filterIsInstance<At>().none { it.target == bot.id }) return@subscribeAlways
             if (!LoliConfig.enableGroups.contains(group.id) && !permRandom.testPermission(group.permitteeId)) return@subscribeAlways
@@ -98,6 +98,7 @@ object LoliYouWant : KotlinPlugin(
 
     fun reloadConfig() {
         LoliConfig.reload()
+        LoliConfig.save()
         Lolibooru.baseUrl = LoliConfig.apiBaseUrl
     }
 }

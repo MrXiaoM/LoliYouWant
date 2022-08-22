@@ -1,9 +1,7 @@
 package top.mrxiaom.loliyouwant
 
-import net.mamoe.mirai.console.data.ReadOnlyPluginConfig
-import net.mamoe.mirai.console.data.ValueDescription
-import net.mamoe.mirai.console.data.ValueName
-import net.mamoe.mirai.console.data.value
+import net.mamoe.mirai.console.data.*
+import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 
 object LoliConfig : ReadOnlyPluginConfig("config") {
 
@@ -62,4 +60,24 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
 
     @ValueDescription("是否顺便保存图片到本地 (data 文件夹)")
     val download by value(false)
+
+    @OptIn(ConsoleExperimentalApi::class)
+    private lateinit var owner_: PluginDataHolder
+    @OptIn(ConsoleExperimentalApi::class)
+    private lateinit var storage_: PluginDataStorage
+    @OptIn(ConsoleExperimentalApi::class)
+    override fun onInit(owner: PluginDataHolder, storage: PluginDataStorage) {
+        owner_ = owner
+        storage_ = storage
+    }
+
+    @OptIn(ConsoleExperimentalApi::class)
+    private fun save() {
+        // 为 ReadOnlyPluginData 增加保存方法，以便更新配置文件
+        kotlin.runCatching {
+            storage_.store(owner_, this)
+        }.onFailure { e ->
+            LoliYouWant.logger.error(e)
+        }
+    }
 }
