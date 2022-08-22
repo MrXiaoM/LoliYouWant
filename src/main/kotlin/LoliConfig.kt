@@ -38,6 +38,9 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
     @ValueDescription("获取成功的回复信息")
     val replyFail by value("\$quote获取失败，稍后再试吧")
 
+    @ValueName("msg-reload")
+    val msgReload by value("配置文件已重载")
+
     @ValueDescription("冷却时间 (各群独立，单位是秒)")
     val cooldown by value(30)
 
