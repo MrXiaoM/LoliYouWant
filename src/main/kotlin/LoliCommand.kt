@@ -5,10 +5,10 @@ import net.mamoe.mirai.console.command.CompositeCommand
 import net.mamoe.mirai.console.command.MemberCommandSender
 import net.mamoe.mirai.console.permission.Permission
 
-class LoliCommand(private val perm: Permission) : CompositeCommand(
+class LoliCommand(perm: Permission) : CompositeCommand(
     owner = LoliYouWant,
     primaryName = "LoliYouWant",
-    secondaryNames = arrayOf("loli", "lyw"),
+    secondaryNames = arrayOf("loli", "luw"),
     parentPermission = perm
 ) {
     fun CommandSender.reload() {

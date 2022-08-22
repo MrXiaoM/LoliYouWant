@@ -18,6 +18,10 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
     @ValueDescription("启用本插件的群聊列表\n除了修改配置外，你也可以给予权限")
     val enableGroups by value(listOf<Long>())
 
+    @ValueName("strict-mode")
+    @ValueDescription("严格模式\n开启后将过滤掉评级为 q (衣物较少) 的图片")
+    val strictMode by value(true)
+
     @ValueDescription("是否需要 @ 机器人来触发随机发图")
     val at by value(false)
 
@@ -36,6 +40,11 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
 
     @ValueDescription("冷却时间 (各群独立，单位是秒)")
     val cooldown by value(30)
+
+    @ValueName("fail-cooldown")
+    @ValueDescription("获取图片失败时重置的冷却时间 (各群独立，单位是秒)")
+    val failCooldown by value(3)
+
     @ValueName("reply-cooldown")
     @ValueDescription("冷却提示\n\$cd 冷却剩余时间")
     val replyCooldown by value("\$quote太快了，再等等吧")

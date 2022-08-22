@@ -1,5 +1,6 @@
 package top.mrxiaom.loliyouwant
 
+import net.mamoe.mirai.console.command.CommandManager.INSTANCE.register
 import net.mamoe.mirai.console.permission.PermissionId
 import net.mamoe.mirai.console.permission.PermissionService
 import net.mamoe.mirai.console.permission.PermissionService.Companion.testPermission
@@ -27,28 +28,35 @@ object LoliYouWant : KotlinPlugin(
             author("MrXiaoM")
         }
 ) {
-    private val r18 = listOf("dick","penis","pupils","sex","pussy","vaginal","nipples")
     private val PERM_RANDOM = PermissionId(id, "random")
+    private val PERM_BYPASS_COOLDOWN = PermissionId(id, "bypass.cooldown")
+    private val PERM_RELOAD = PermissionId(id, "reload")
     private val cooldown = mutableMapOf<Long, Long>()
     override fun onEnable() {
         val permRandom = PermissionService.INSTANCE.register(PERM_RANDOM, "随机发图权限")
+        val permBypassCooldown = PermissionService.INSTANCE.register(PERM_BYPASS_COOLDOWN, "绕过冷却时间")
+
         reloadConfig()
+        LoliCommand(PermissionService.INSTANCE.register(PERM_RELOAD, "重载配置文件")).register()
+        
         globalEventChannel(coroutineContext).subscribeAlways<GroupMessageEvent> {
             if (LoliConfig.at && this.message.filterIsInstance<At>().none { it.target == bot.id }) return@subscribeAlways
             if (!LoliConfig.enableGroups.contains(group.id) && !permRandom.testPermission(group.permitteeId)) return@subscribeAlways
             if (!LoliConfig.keywords.contains(message.filterIsInstance<PlainText>().joinToString { it.content }.trimStart().trimEnd())) return@subscribeAlways
-            val quote = QuoteReply(source)
-            val at = At(sender)
-            val replacement = mutableMapOf("quote" to quote, "at" to at)
-            val cd = cooldown.getOrDefault(group.id, 0)
-            if (cd >= System.currentTimeMillis()) {
-                group.sendMessage(LoliConfig.replyCooldown.replace(replacement))
-                return@subscribeAlways
+            val replacement = mutableMapOf("quote" to QuoteReply(source), "at" to At(sender))
+            if (!permBypassCooldown.testPermission(group.permitteeId) && !permBypassCooldown.testPermission(sender.permitteeId)) {
+                val cd = cooldown.getOrDefault(group.id, 0)
+                if (cd >= System.currentTimeMillis()) {
+                    replacement["cd"] = PlainText(((cd - System.currentTimeMillis()) / 1000L).toString())
+                    group.sendMessage(LoliConfig.replyCooldown.replace(replacement))
+                    return@subscribeAlways
+                }
             }
             cooldown[group.id] = System.currentTimeMillis() + LoliConfig.cooldown * 1000
-            val loli = Lolibooru.random(1).firstOrNull()
-            if (loli == null || r18(loli.tags.lowercase(Locale.getDefault()))) {
+            val loli = searchLoli(Lolibooru.random(10))
+            if (loli == null) {
                 group.sendMessage(LoliConfig.replyFail.replace(replacement))
+                cooldown[group.id] = System.currentTimeMillis() + LoliConfig.failCooldown * 1000
                 return@subscribeAlways
             }
             val url = when(LoliConfig.quality)
@@ -58,8 +66,13 @@ object LoliYouWant : KotlinPlugin(
                 else -> loli.urlSample
             }.replace(" ", "%20")
             replacement.putAll(mapOf(
+                "id" to PlainText(loli.id.toString()),
+                "url_preview" to PlainText(loli.urlPreview),
+                "url_sample" to PlainText(loli.urlSample),
+                "url_file" to PlainText(loli.url),
                 "url" to PlainText(url),
                 "tags" to PlainText(loli.tags),
+                "rating" to PlainText(loli.rating),
                 "pic" to PrepareUploadImage.url(group, url, LoliConfig.imageFailDownload
                 ) { input ->
                     if (!LoliConfig.download) return@url input
@@ -72,11 +85,13 @@ object LoliYouWant : KotlinPlugin(
         }
         logger.info { "Plugin loaded" }
     }
-    fun r18(tags: String): Boolean {
-        for (keyword in r18){
-            if (tags.contains(keyword)) return true
-        }
-        return false
+    fun searchLoli(loliList: List<Loli>): Loli? {
+        return loliList
+                // 为你的账号安全着想，请不要移除评级为 e 的图片过滤
+                // 要涩涩就自己上源站看去
+            .filter { it.rating != "e" }
+            .filter { if (!LoliConfig.strictMode) it.rating != "q" else true}
+            .randomOrNull()
     }
 
     fun reloadConfig() {
