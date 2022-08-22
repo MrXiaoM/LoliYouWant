@@ -38,6 +38,14 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
     @ValueDescription("获取成功的回复信息")
     val replyFail by value("\$quote获取失败，稍后再试吧")
 
+    @ValueName("reply-fetching")
+    @ValueDescription("正在获取的回复信息")
+    val replyFetching by value("\$quote正在获取中，请稍等")
+
+    @ValueName("recall-fetching-message")
+    @ValueDescription("图片获取完成后撤回正在获取的回复信息")
+    val recallFetchingMessage by value(true)
+
     @ValueName("msg-reload")
     val msgReload by value("配置文件已重载")
 

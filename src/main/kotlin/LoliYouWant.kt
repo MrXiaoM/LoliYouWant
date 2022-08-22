@@ -8,16 +8,15 @@ import net.mamoe.mirai.console.permission.PermitteeId.Companion.permitteeId
 import net.mamoe.mirai.console.plugin.id
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
 import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
+import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.event.events.GroupMessageEvent
 import net.mamoe.mirai.event.globalEventChannel
+import net.mamoe.mirai.message.MessageReceipt
 import net.mamoe.mirai.message.data.At
 import net.mamoe.mirai.message.data.PlainText
 import net.mamoe.mirai.message.data.QuoteReply
 import net.mamoe.mirai.utils.info
 import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.net.URLEncoder
-import java.util.*
 
 object LoliYouWant : KotlinPlugin(
         JvmPluginDescription(
@@ -53,10 +52,12 @@ object LoliYouWant : KotlinPlugin(
                 }
             }
             cooldown[group.id] = System.currentTimeMillis() + LoliConfig.cooldown * 1000
+            val receipt = group.sendMessage(LoliConfig.replyFetching.replace(replacement))
             val loli = searchLoli(Lolibooru.random(10))
             if (loli == null) {
                 group.sendMessage(LoliConfig.replyFail.replace(replacement))
                 cooldown[group.id] = System.currentTimeMillis() + LoliConfig.failCooldown * 1000
+                receipt.recallIgnoreError()
                 return@subscribeAlways
             }
             val url = when(LoliConfig.quality)
@@ -82,6 +83,7 @@ object LoliYouWant : KotlinPlugin(
                 }
             ))
             group.sendMessage(LoliConfig.replySuccess.replace(replacement))
+            receipt.recallIgnoreError()
         }
         logger.info { "Plugin loaded" }
     }
@@ -98,4 +100,9 @@ object LoliYouWant : KotlinPlugin(
         LoliConfig.reload()
         Lolibooru.baseUrl = LoliConfig.apiBaseUrl
     }
+}
+suspend fun MessageReceipt<Contact>.recallIgnoreError() {
+    try {
+        this.recall()
+    }catch (_: Throwable) {}
 }

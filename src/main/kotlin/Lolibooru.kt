@@ -3,7 +3,6 @@ package top.mrxiaom.loliyouwant
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import net.mamoe.mirai.utils.MiraiLogger
-import net.mamoe.mirai.utils.debug
 import java.net.URL
 
 object Lolibooru {
@@ -23,6 +22,8 @@ object Lolibooru {
             val url = "${baseUrl}post/index.json?limit=$limit&page$page" + (if (tags != null) "&tags=$tags" else "")
             logger.debug("Now connecting to $url")
             val conn = URL(url).openConnection()
+            conn.connectTimeout = 30 * 1000
+            conn.readTimeout = 30 * 1000
             conn.addRequestProperty("User-Agent", "Chrome/104.0.5112.81")
             conn.connect()
             val jsonString = String(conn.getInputStream().readBytes())
