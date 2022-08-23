@@ -19,7 +19,7 @@ object Lolibooru {
     fun get(limit: Int, page: Int = 1, tags: String? = null): List<Loli> {
         val list = mutableListOf<Loli>()
         try {
-            val url = "${baseUrl}post/index.json?limit=$limit&page$page" + (if (tags != null) "&tags=$tags" else "")
+            val url = "${baseUrl}post/index.json?limit=$limit&page=$page" + (if (tags != null) "&tags=$tags" else "")
             logger.debug("Now connecting to $url")
             val conn = URL(url).openConnection()
             conn.connectTimeout = 30 * 1000
