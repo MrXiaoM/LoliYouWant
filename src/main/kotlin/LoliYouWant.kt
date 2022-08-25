@@ -68,10 +68,10 @@ object LoliYouWant : KotlinPlugin(
             }.replace(" ", "%20")
             replacement.putAll(mapOf(
                 "id" to PlainText(loli.id.toString()),
-                "url_preview" to PlainText(loli.urlPreview),
-                "url_sample" to PlainText(loli.urlSample),
-                "url_file" to PlainText(loli.url),
-                "url" to PlainText(url),
+                "previewUrl" to PlainText(loli.urlPreview.replace(" ", "%20")),
+                "sampleUrl" to PlainText(loli.urlSample.replace(" ", "%20")),
+                "fileUrl" to PlainText(loli.url.replace(" ", "%20")),
+                "url" to PlainText(url.replace(" ", "%20")),
                 "tags" to PlainText(loli.tags),
                 "rating" to PlainText(loli.rating),
                 "pic" to PrepareUploadImage.url(group, url, LoliConfig.imageFailDownload
