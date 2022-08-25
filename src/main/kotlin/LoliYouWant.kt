@@ -27,6 +27,8 @@ object LoliYouWant : KotlinPlugin(
             author("MrXiaoM")
         }
 ) {
+    private val r18Tags = listOf("sex", "penis", "pussy", "cum", "nude", "vaginal", "testicles")
+    private val blacklistTags = mutableListOf<String>()
     private val PERM_RANDOM = PermissionId(id, "random")
     private val PERM_BYPASS_COOLDOWN = PermissionId(id, "bypass.cooldown")
     private val PERM_RELOAD = PermissionId(id, "reload")
@@ -53,7 +55,7 @@ object LoliYouWant : KotlinPlugin(
             }
             cooldown[group.id] = System.currentTimeMillis() + LoliConfig.cooldown * 1000
             val receipt = group.sendMessage(LoliConfig.replyFetching.replace(replacement))
-            val loli = searchLoli(Lolibooru.random(10))
+            val loli = searchLolis(Lolibooru.get(10, 1, "order%3Arandom%20-rating:e")).randomOrNull()
             if (loli == null) {
                 group.sendMessage(LoliConfig.replyFail.replace(replacement))
                 cooldown[group.id] = System.currentTimeMillis() + LoliConfig.failCooldown * 1000
@@ -87,19 +89,28 @@ object LoliYouWant : KotlinPlugin(
         }
         logger.info { "Plugin loaded" }
     }
-    fun searchLoli(loliList: List<Loli>): Loli? {
+    fun searchLolis(loliList: List<Loli>): List<Loli> {
         return loliList
                 // 为你的账号安全着想，请不要移除评级为 e 的图片过滤
                 // 要涩涩就自己上源站看去
             .filter { it.rating != "e" }
+            .filter { checkTags(it) }
             .filter { if (!LoliConfig.strictMode) it.rating != "q" else true}
-            .randomOrNull()
+    }
+    fun checkTags(loli: Loli): Boolean {
+        for (tag in blacklistTags) {
+            if (loli.tags.contains(tag)) return false
+        }
+        return true
     }
 
     fun reloadConfig() {
         LoliConfig.reload()
         LoliConfig.save()
         Lolibooru.baseUrl = LoliConfig.apiBaseUrl
+        blacklistTags.clear()
+        blacklistTags.addAll(r18Tags)
+        blacklistTags.addAll(LoliConfig.hiddenTags)
     }
 }
 suspend fun MessageReceipt<Contact>.recallIgnoreError() {

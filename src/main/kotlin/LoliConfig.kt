@@ -20,6 +20,10 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
     @ValueDescription("严格模式\n开启后将过滤掉评级为 q (衣物较少) 的图片")
     val strictMode by value(true)
 
+    @ValueName("hidden-tags")
+    @ValueDescription("隐藏 tag 不合适的图片")
+    val hiddenTags by value(listOf("panties"))
+
     @ValueDescription("是否需要 @ 机器人来触发随机发图")
     val at by value(false)
 
