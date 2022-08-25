@@ -83,7 +83,7 @@ object LoliYouWant : KotlinPlugin(
                 }
             ))
             group.sendMessage(LoliConfig.replySuccess.replace(replacement))
-            receipt.recallIgnoreError()
+            if (LoliConfig.recallFetchingMessage) receipt.recallIgnoreError()
         }
         logger.info { "Plugin loaded" }
     }
