@@ -20,13 +20,13 @@ import net.mamoe.mirai.utils.info
 import java.io.FileInputStream
 
 object LoliYouWant : KotlinPlugin(
-        JvmPluginDescription(
-                id = "top.mrxiaom.loliyouwant",
-                name = "Loli You Want",
-                version = "0.1.0",
-        ) {
-            author("MrXiaoM")
-        }
+    JvmPluginDescription(
+        id = "top.mrxiaom.loliyouwant",
+        name = "Loli You Want",
+        version = "0.1.0",
+    ) {
+        author("MrXiaoM")
+    }
 ) {
     private val r18Tags = listOf("sex", "penis", "pussy", "cum", "nude", "vaginal", "testicles")
     private val blacklistTags = mutableListOf<String>()
@@ -43,9 +43,15 @@ object LoliYouWant : KotlinPlugin(
         LoliCommand(PermissionService.INSTANCE.register(PERM_RELOAD, "重载配置文件")).register()
 
         globalEventChannel(coroutineContext).subscribeAlways<GroupMessageEvent> {
-            if (LoliConfig.at && this.message.filterIsInstance<At>().none { it.target == bot.id }) return@subscribeAlways
-            if (!LoliConfig.enableGroups.contains(group.id) && !permRandom.testPermission(group.permitteeId) && !permRandom.testPermission(sender.permitteeId)) return@subscribeAlways
-            if (!LoliConfig.keywords.contains(message.filterIsInstance<PlainText>().joinToString { it.content }.trimStart().trimEnd())) return@subscribeAlways
+            if (LoliConfig.at && this.message.filterIsInstance<At>()
+                    .none { it.target == bot.id }
+            ) return@subscribeAlways
+            if (!LoliConfig.enableGroups.contains(group.id) && !permRandom.testPermission(group.permitteeId) && !permRandom.testPermission(
+                    sender.permitteeId
+                )
+            ) return@subscribeAlways
+            if (!LoliConfig.keywords.contains(message.filterIsInstance<PlainText>().joinToString { it.content }
+                    .trimStart().trimEnd())) return@subscribeAlways
             val replacement = mutableMapOf("quote" to QuoteReply(source), "at" to At(sender))
             if (!permBypassCooldown.testPermission(group.permitteeId) && !permBypassCooldown.testPermission(sender.permitteeId)) {
                 val cd = cooldown.getOrDefault(group.id, 0)
@@ -64,8 +70,7 @@ object LoliYouWant : KotlinPlugin(
                 receipt.recallIgnoreError()
                 return@subscribeAlways
             }
-            val url = when(LoliConfig.quality)
-            {
+            val url = when (LoliConfig.quality) {
                 "FILE" -> loli.url
                 "PREVIEW" -> loli.urlPreview
                 else -> loli.urlSample
@@ -78,7 +83,8 @@ object LoliYouWant : KotlinPlugin(
                 "url" to PlainText(url.replace(" ", "%20")),
                 "tags" to PlainText(loli.tags),
                 "rating" to PlainText(loli.rating),
-                "pic" to PrepareUploadImage.url(group, url, LoliConfig.imageFailDownload
+                "pic" to PrepareUploadImage.url(
+                    group, url, LoliConfig.imageFailDownload
                 ) { input ->
                     if (!LoliConfig.download) return@url input
                     val file = resolveDataFile(url.substringAfterLast('/').replace("%20", " "))
@@ -92,7 +98,8 @@ object LoliYouWant : KotlinPlugin(
 
         globalEventChannel(coroutineContext).subscribeAlways<FriendMessageEvent> {
             if (!permRandom.testPermission(sender.permitteeId)) return@subscribeAlways
-            if (!LoliConfig.keywords.contains(message.filterIsInstance<PlainText>().joinToString { it.content }.trimStart().trimEnd())) return@subscribeAlways
+            if (!LoliConfig.keywords.contains(message.filterIsInstance<PlainText>().joinToString { it.content }
+                    .trimStart().trimEnd())) return@subscribeAlways
             val replacement = mutableMapOf("quote" to QuoteReply(source), "at" to At(sender))
             if (!permBypassCooldown.testPermission(sender.permitteeId)) {
                 val cd = cooldownFriend.getOrDefault(sender.id, 0)
@@ -111,8 +118,7 @@ object LoliYouWant : KotlinPlugin(
                 receipt.recallIgnoreError()
                 return@subscribeAlways
             }
-            val url = when(LoliConfig.quality)
-            {
+            val url = when (LoliConfig.quality) {
                 "FILE" -> loli.url
                 "PREVIEW" -> loli.urlPreview
                 else -> loli.urlSample
@@ -125,7 +131,8 @@ object LoliYouWant : KotlinPlugin(
                 "url" to PlainText(url.replace(" ", "%20")),
                 "tags" to PlainText(loli.tags),
                 "rating" to PlainText(loli.rating),
-                "pic" to PrepareUploadImage.url(sender, url, LoliConfig.imageFailDownload
+                "pic" to PrepareUploadImage.url(
+                    sender, url, LoliConfig.imageFailDownload
                 ) { input ->
                     if (!LoliConfig.download) return@url input
                     val file = resolveDataFile(url.substringAfterLast('/').replace("%20", " "))
@@ -138,14 +145,16 @@ object LoliYouWant : KotlinPlugin(
         }
         logger.info { "Plugin loaded" }
     }
+
     fun searchLolis(loliList: List<Loli>): List<Loli> {
         return loliList
-                // 为你的账号安全着想，请不要移除评级为 e 的图片过滤
-                // 要涩涩就自己上源站看去
+            // 为你的账号安全着想，请不要移除评级为 e 的图片过滤
+            // 要涩涩就自己上源站看去
             .filter { it.rating != "e" }
             .filter { checkTags(it) }
-            .filter { if (!LoliConfig.strictMode) it.rating != "q" else true}
+            .filter { if (!LoliConfig.strictMode) it.rating != "q" else true }
     }
+
     fun checkTags(loli: Loli): Boolean {
         for (tag in blacklistTags) {
             if (loli.tags.contains(tag)) return false
@@ -162,8 +171,10 @@ object LoliYouWant : KotlinPlugin(
         blacklistTags.addAll(LoliConfig.hiddenTags)
     }
 }
+
 suspend fun MessageReceipt<Contact>.recallIgnoreError() {
     try {
         this.recall()
-    }catch (_: Throwable) {}
+    } catch (_: Throwable) {
+    }
 }

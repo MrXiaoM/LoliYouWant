@@ -33,7 +33,12 @@ class PrepareUploadImage(
 
     companion object {
         @JvmStatic
-        fun url(contact: Contact, link: String, failedText: String = "", success: (InputStream)->InputStream = { it } ): PrepareUploadImage {
+        fun url(
+            contact: Contact,
+            link: String,
+            failedText: String = "",
+            success: (InputStream) -> InputStream = { it }
+        ): PrepareUploadImage {
             return PrepareUploadImage(contact, {
                 try {
                     val conn = withContext(Dispatchers.IO) {
@@ -72,7 +77,7 @@ suspend fun String.replace(replacements: Map<String, SingleMessage>): MessageCha
             if (!text.startsWith(k)) continue
             replacements[k]?.let {
                 if (it is PrepareMessage) message.add(it.generateMessage())
-                else message.add (it)
+                else message.add(it)
             }
 
             message.add(text.substring(k.length))

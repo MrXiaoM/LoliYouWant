@@ -49,10 +49,11 @@ object Lolibooru {
      * 调用 Lolibooru 接口随机获取图片
      * @see get
      */
-    fun random(limit: Int, page: Int = 1) : List<Loli> {
-        return get(limit, page,"order%3Arandom")
+    fun random(limit: Int, page: Int = 1): List<Loli> {
+        return get(limit, page, "order%3Arandom")
     }
 }
+
 class Loli(
     val id: Int,
     val url: String,
