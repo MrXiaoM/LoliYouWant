@@ -42,7 +42,7 @@ object LoliYouWant : KotlinPlugin(
 
         globalEventChannel(coroutineContext).subscribeAlways<GroupMessageEvent> {
             if (LoliConfig.at && this.message.filterIsInstance<At>().none { it.target == bot.id }) return@subscribeAlways
-            if (!LoliConfig.enableGroups.contains(group.id) && !permRandom.testPermission(group.permitteeId)) return@subscribeAlways
+            if (!LoliConfig.enableGroups.contains(group.id) && !permRandom.testPermission(group.permitteeId) && !permRandom.testPermission(sender.permitteeId)) return@subscribeAlways
             if (!LoliConfig.keywords.contains(message.filterIsInstance<PlainText>().joinToString { it.content }.trimStart().trimEnd())) return@subscribeAlways
             val replacement = mutableMapOf("quote" to QuoteReply(source), "at" to At(sender))
             if (!permBypassCooldown.testPermission(group.permitteeId) && !permBypassCooldown.testPermission(sender.permitteeId)) {
