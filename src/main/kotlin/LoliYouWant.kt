@@ -79,7 +79,7 @@ object LoliYouWant : KotlinPlugin(
                 "pic" to PrepareUploadImage.url(group, url, LoliConfig.imageFailDownload
                 ) { input ->
                     if (!LoliConfig.download) return@url input
-                    val file = resolveDataFile(url.substringAfterLast('/'))
+                    val file = resolveDataFile(url.substringAfterLast('/').replace("%20", " "))
                     file.writeBytes(input.readBytes())
                     return@url FileInputStream(file)
                 }
