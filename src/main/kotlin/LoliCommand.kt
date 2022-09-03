@@ -16,5 +16,8 @@ class LoliCommand(perm: Permission) : SimpleCommand(
             LoliYouWant.reloadConfig()
             sendMessage(LoliConfig.msgReload)
         }
+        if (operation.equals("keywords", false)) {
+            sendMessage("关键词列表 (${LoliConfig.keywords.size}):\n" + LoliConfig.keywords.map { "   ${it.key} (获取 ${it.value.count} 张图) 标签: " + (if (it.value.tags.isEmpty()) "(无)" else it.value.tags.joinToString(" ")) }.joinToString("\n"))
+        }
     }
 }
