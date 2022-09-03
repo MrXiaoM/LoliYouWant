@@ -28,7 +28,7 @@ object LoliYouWant : KotlinPlugin(
         author("MrXiaoM")
     }
 ) {
-    private val r18Tags = listOf("sex", "penis", "pussy", "cum", "nude", "vaginal", "testicles")
+    private val r18Tags = listOf("sex", "penis", "pussy", "cum", "nude", "vaginal", "testicles", "nipple", "vulva")
     private val blacklistTags = mutableListOf<String>()
     private val PERM_RANDOM = PermissionId(id, "random")
     private val PERM_BYPASS_COOLDOWN = PermissionId(id, "bypass.cooldown")
