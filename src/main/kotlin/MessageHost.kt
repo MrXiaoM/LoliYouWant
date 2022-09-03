@@ -1,72 +1,100 @@
 package top.mrxiaom.loliyouwant
 
+import net.mamoe.mirai.console.permission.Permission
 import net.mamoe.mirai.console.permission.PermissionService.Companion.testPermission
+import net.mamoe.mirai.console.permission.PermitteeId
 import net.mamoe.mirai.console.permission.PermitteeId.Companion.permitteeId
 import net.mamoe.mirai.contact.Contact
+import net.mamoe.mirai.contact.Group
+import net.mamoe.mirai.contact.User
 import net.mamoe.mirai.event.EventHandler
 import net.mamoe.mirai.event.SimpleListenerHost
 import net.mamoe.mirai.event.events.FriendMessageEvent
 import net.mamoe.mirai.event.events.GroupMessageEvent
 import net.mamoe.mirai.message.MessageReceipt
-import net.mamoe.mirai.message.data.At
-import net.mamoe.mirai.message.data.PlainText
-import net.mamoe.mirai.message.data.QuoteReply
-import net.mamoe.mirai.message.data.SingleMessage
+import net.mamoe.mirai.message.data.*
 import java.io.FileInputStream
 
 object MessageHost : SimpleListenerHost() {
+
     @EventHandler
     suspend fun onGroupMessage(event: GroupMessageEvent) {
-        if (LoliConfig.at && event.message.filterIsInstance<At>()
-                .none { it.target == event.bot.id }
-        ) return
-        if (!LoliConfig.enableGroups.contains(event.group.id) && !LoliYouWant.PERM_RANDOM.testPermission(event.group.permitteeId) && !LoliYouWant.PERM_RANDOM.testPermission(
-                event.sender.permitteeId
+        // 权限
+        if (!LoliConfig.enableGroups.contains(event.group.id) && !anyHasPerm(
+                LoliYouWant.PERM_RANDOM,
+                event.group,
+                event.sender
             )
         ) return
-        if (!LoliConfig.keywords.contains(event.message.filterIsInstance<PlainText>().joinToString { it.content }
-                .trimStart().trimEnd())) return
+
+        // 捕捉关键词
+        val at = event.message.filterIsInstance<At>().any { it.target == event.bot.id }
+        val keyword = LoliConfig.resolveKeyword(event.message, at) ?: return
+
         val replacement = mutableMapOf("quote" to QuoteReply(event.source), "at" to At(event.sender))
-        if (!LoliYouWant.PERM_BYPASS_COOLDOWN.testPermission(event.group.permitteeId) && !LoliYouWant.PERM_BYPASS_COOLDOWN.testPermission(
-                event.sender.permitteeId
-            )
-        ) {
+
+        // 冷却
+        if (!anyHasPerm(LoliYouWant.PERM_BYPASS_COOLDOWN, event.group, event.sender)) {
             val cd = LoliYouWant.cooldown.getOrDefault(event.group.id, 0)
             if (cd >= System.currentTimeMillis()) {
                 replacement["cd"] = PlainText(((cd - System.currentTimeMillis()) / 1000L).toString())
                 event.group.sendMessage(LoliConfig.replyCooldown.replace(replacement))
                 return
             }
+
+            // 无权限时才设置冷却
+            LoliYouWant.cooldown[event.group.id] = System.currentTimeMillis() + LoliConfig.cooldown * 1000
         }
-        LoliYouWant.cooldown[event.group.id] = System.currentTimeMillis() + LoliConfig.cooldown * 1000
-        val result = sendLoliPicture(event.group, replacement)
-        if (LoliConfig.recallFetchingMessage) result.second.recallIgnoreError()
+
+        // 获取图片并发送
+        val result =
+            if (keyword.count > 1) sendLoliPictureCollection(event.group, keyword, replacement) else sendLoliPicture(
+                event.group,
+                keyword,
+                replacement
+            )
+        if (keyword.recallFetchingMessage) result.second.recallIgnoreError()
         if (!result.first) {
-            event.group.sendMessage(LoliConfig.replyFail.replace(replacement))
+            event.group.sendMessage(keyword.replyFail.replace(replacement))
             LoliYouWant.cooldown[event.group.id] = System.currentTimeMillis() + LoliConfig.failCooldown * 1000
         }
     }
 
     @EventHandler
     suspend fun onFriendMessage(event: FriendMessageEvent) {
-        if (!LoliYouWant.PERM_RANDOM.testPermission(event.sender.permitteeId)) return
-        if (!LoliConfig.keywords.contains(event.message.filterIsInstance<PlainText>().joinToString { it.content }
-                .trimStart().trimEnd())) return
+        // 权限
+        if (!anyHasPerm(LoliYouWant.PERM_RANDOM, event.sender)) return
+
+        // 捕捉关键词
+        val at = event.message.filterIsInstance<At>().any { it.target == event.bot.id }
+        val keyword = LoliConfig.resolveKeyword(event.message, at) ?: return
+
         val replacement = mutableMapOf<String, SingleMessage>("quote" to QuoteReply(event.source))
-        if (!LoliYouWant.PERM_BYPASS_COOLDOWN.testPermission(event.sender.permitteeId)) {
+
+        // 冷却
+        if (!anyHasPerm(LoliYouWant.PERM_BYPASS_COOLDOWN, event.sender)) {
             val cd = LoliYouWant.cooldownFriend.getOrDefault(event.sender.id, 0)
             if (cd >= System.currentTimeMillis()) {
                 replacement["cd"] = PlainText(((cd - System.currentTimeMillis()) / 1000L).toString())
                 event.sender.sendMessage(LoliConfig.replyCooldown.replace(replacement))
                 return
             }
+
+            // 无权限时才设置冷却
+            LoliYouWant.cooldownFriend[event.sender.id] = System.currentTimeMillis() + LoliConfig.cooldown * 1000
         }
-        LoliYouWant.cooldownFriend[event.sender.id] = System.currentTimeMillis() + LoliConfig.cooldown * 1000
-        val result = sendLoliPicture(event.sender, replacement)
-        if (LoliConfig.recallFetchingMessage) result.second.recallIgnoreError()
+
+        // 获取图片并发送
+        val result =
+            if (keyword.count > 1) sendLoliPictureCollection(event.friend, keyword, replacement) else sendLoliPicture(
+                event.sender,
+                keyword,
+                replacement
+            )
+        if (keyword.recallFetchingMessage) result.second.recallIgnoreError()
         if (!result.first) {
-            event.sender.sendMessage(LoliConfig.replyFail.replace(replacement))
-            LoliYouWant.cooldownFriend[event.sender.id] = System.currentTimeMillis() + LoliConfig.failCooldown * 1000
+            event.sender.sendMessage(keyword.replyFail.replace(replacement))
+            LoliYouWant.cooldownFriend[event.friend.id] = System.currentTimeMillis() + LoliConfig.failCooldown * 1000
         }
     }
 
@@ -169,3 +197,13 @@ object MessageHost : SimpleListenerHost() {
     }
 }
 
+val Contact.permitteeIdOrNull: PermitteeId?
+    get() = when (this) {
+        is User -> this.permitteeId
+        is Group -> this.permitteeId
+        else -> null
+    }
+
+fun anyHasPerm(p: Permission, vararg users: Contact): Boolean = users.any {
+    p.testPermission(it.permitteeIdOrNull ?: return@any false)
+}
