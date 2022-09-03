@@ -22,7 +22,7 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
 
     @ValueName("hidden-tags")
     @ValueDescription("隐藏 tag 不合适的图片")
-    val hiddenTags by value(listOf("panties", "navel", "breast", "bikini", "stomach"))
+    val hiddenTags by value(listOf("panties", "pantsu", "underwear", "navel", "breast", "bikini", "stomach", "topless", "bottomless", "groin", "butt"))
 
     @ValueDescription("是否需要 @ 机器人来触发随机发图")
     val at by value(false)
