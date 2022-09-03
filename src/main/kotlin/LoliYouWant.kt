@@ -30,17 +30,16 @@ object LoliYouWant : KotlinPlugin(
 ) {
     private val r18Tags = listOf("sex", "penis", "pussy", "cum", "nude", "vaginal", "testicles", "nipple", "vulva")
     private val blacklistTags = mutableListOf<String>()
-    private val PERM_RANDOM = PermissionId(id, "random")
-    private val PERM_BYPASS_COOLDOWN = PermissionId(id, "bypass.cooldown")
-    private val PERM_RELOAD = PermissionId(id, "reload")
-    private val cooldown = mutableMapOf<Long, Long>()
-    private val cooldownFriend = mutableMapOf<Long, Long>()
+    lateinit var PERM_RANDOM: Permission
+    lateinit var PERM_BYPASS_COOLDOWN: Permission
+    lateinit var PERM_RELOAD: Permission
     override fun onEnable() {
-        val permRandom = PermissionService.INSTANCE.register(PERM_RANDOM, "随机发图权限")
-        val permBypassCooldown = PermissionService.INSTANCE.register(PERM_BYPASS_COOLDOWN, "绕过冷却时间")
+        PERM_RANDOM = PermissionService.INSTANCE.register(PermissionId(id, "random"), "随机发图权限")
+        PERM_BYPASS_COOLDOWN = PermissionService.INSTANCE.register(PermissionId(id, "bypass.cooldown"), "绕过冷却时间")
+        PERM_RELOAD = PermissionService.INSTANCE.register(PermissionId(id, "reload"), "重载配置文件")
 
         reloadConfig()
-        LoliCommand(PermissionService.INSTANCE.register(PERM_RELOAD, "重载配置文件")).register()
+        LoliCommand(PERM_RELOAD).register()
 
         globalEventChannel(coroutineContext).subscribeAlways<GroupMessageEvent> {
             if (LoliConfig.at && this.message.filterIsInstance<At>()
