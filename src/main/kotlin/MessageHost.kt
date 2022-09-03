@@ -13,6 +13,7 @@ import net.mamoe.mirai.event.events.FriendMessageEvent
 import net.mamoe.mirai.event.events.GroupMessageEvent
 import net.mamoe.mirai.message.MessageReceipt
 import net.mamoe.mirai.message.data.*
+import java.io.File
 import java.io.FileInputStream
 
 object MessageHost : SimpleListenerHost() {
@@ -127,8 +128,9 @@ object MessageHost : SimpleListenerHost() {
                 contact, url, keyword.imageFailDownload
             ) { input ->
                 if (!keyword.download) return@url input
-                val path = keyword.overrideDownloadPath.replace("\\", "/").removeSurrounding("/") + "/"
-                val file = LoliYouWant.resolveDataFile(path + url.substringAfterLast('/').replace("%20", " "))
+                val folder = LoliYouWant.resolveDataFile(keyword.overrideDownloadPath.replace("\\", "/").removeSurrounding("/"))
+                if (!folder.exists()) folder.mkdirs()
+                val file = File(folder, url.substringAfterLast('/').replace("%20", " "))
 
                 file.writeBytes(input.readBytes())
                 return@url FileInputStream(file)
@@ -177,8 +179,9 @@ object MessageHost : SimpleListenerHost() {
                     contact, url, keyword.imageFailDownload
                 ) { input ->
                     if (!keyword.download) return@url input
-                    val path = keyword.overrideDownloadPath.replace("\\", "/").removeSurrounding("/") + "/"
-                    val file = LoliYouWant.resolveDataFile(path + url.substringAfterLast('/').replace("%20", " "))
+                    val folder = LoliYouWant.resolveDataFile(keyword.overrideDownloadPath.replace("\\", "/").removeSurrounding("/"))
+                    if (!folder.exists()) folder.mkdirs()
+                    val file = File(folder, url.substringAfterLast('/').replace("%20", " "))
 
                     file.writeBytes(input.readBytes())
                     return@url FileInputStream(file)
