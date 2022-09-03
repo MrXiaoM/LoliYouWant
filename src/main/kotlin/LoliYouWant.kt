@@ -12,8 +12,6 @@ import net.mamoe.mirai.event.globalEventChannel
 import net.mamoe.mirai.event.registerTo
 import net.mamoe.mirai.message.MessageReceipt
 import net.mamoe.mirai.utils.info
-import java.net.URLDecoder
-import java.net.URLEncoder
 
 object LoliYouWant : KotlinPlugin(
     JvmPluginDescription(
@@ -24,7 +22,20 @@ object LoliYouWant : KotlinPlugin(
         author("MrXiaoM")
     }
 ) {
-    private val r18Tags = listOf("sex", "penis", "pussy", "cum", "nude", "vaginal", "testicles", "nipple", "vulva")
+    private val r18Tags = listOf(
+        "sex",
+        "penis",
+        "pussy",
+        "cum",
+        "nude",
+        "vaginal",
+        "testicles",
+        "nipple",
+        "papilla",
+        "teat",
+        "thele",
+        "vulva"
+    )
     private val blacklistTags = mutableListOf<String>()
     lateinit var PERM_RANDOM: Permission
     lateinit var PERM_BYPASS_COOLDOWN: Permission
@@ -76,6 +87,3 @@ suspend fun MessageReceipt<Contact>.recallIgnoreError() {
     } catch (_: Throwable) {
     }
 }
-
-fun urlEncode(s: String): String = URLEncoder.encode(s, "UTF-8")
-fun urlDecode(s: String): String = URLDecoder.decode(s, "UTF-8")
