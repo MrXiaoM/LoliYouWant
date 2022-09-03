@@ -3,7 +3,11 @@ package top.mrxiaom.loliyouwant
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import net.mamoe.mirai.utils.MiraiLogger
+import java.io.InputStream
+import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLDecoder
+import java.net.URLEncoder
 
 object Lolibooru {
     private val logger = MiraiLogger.Factory.create(this::class, "Lolibooru")
@@ -19,14 +23,13 @@ object Lolibooru {
     fun get(limit: Int, page: Int = 1, tags: String? = null): List<Loli> {
         val list = mutableListOf<Loli>()
         try {
-            val url = "${baseUrl}post/index.json?limit=$limit&page=$page" + (if (tags != null) "&tags=$tags" else "")
-            logger.debug("Now connecting to $url")
-            val conn = URL(url).openConnection()
-            conn.connectTimeout = 30 * 1000
-            conn.readTimeout = 30 * 1000
-            conn.addRequestProperty("User-Agent", "Chrome/104.0.5112.81")
-            conn.connect()
-            val jsonString = String(conn.getInputStream().readBytes())
+            val url = url(baseUrl, "post/index.json")
+            val input = httpGet(url, mutableMapOf<String, Any>(
+                "limit" to limit,
+                "page" to page
+            ).also { if (tags != null) it["tags"] = tags.trimStart().trimEnd() }) ?: return list
+            val jsonString = String(input.readBytes())
+            input.close()
             logger.debug("Response json: $jsonString")
             val type = object : TypeToken<ArrayList<JsonLoli>>() {}.type
             val json = gson.fromJson<ArrayList<JsonLoli>>(jsonString, type)
@@ -45,12 +48,19 @@ object Lolibooru {
         return list
     }
 
-    /**
-     * 调用 Lolibooru 接口随机获取图片
-     * @see get
-     */
-    fun random(limit: Int, page: Int = 1): List<Loli> {
-        return get(limit, page, "order%3Arandom")
+    private fun httpGet(url: String, params: Map<String, Any>, timeout: Int = 60): InputStream? {
+        val paramsString = params.map { "${it.key}=${urlEncode(it.value.toString())}" }.joinToString("&")
+        val finalUrl = "$url?$paramsString"
+
+        logger.debug("Now connecting to $finalUrl")
+        val conn = URL(finalUrl).openConnection() as HttpURLConnection
+        conn.connectTimeout = timeout * 1000
+        conn.readTimeout = timeout * 1000
+        conn.requestMethod = "GET"
+        conn.addRequestProperty("User-Agent", "Chrome/104.0.5112.81")
+        conn.connect()
+
+        return conn.inputStream
     }
 }
 
@@ -62,3 +72,8 @@ class Loli(
     val tags: String,
     val rating: String
 )
+
+fun url(site: String, path: String): String = site.removeSuffix("/") + "/" + path.removePrefix("/")
+
+fun urlEncode(s: String): String = URLEncoder.encode(s, "UTF-8")
+fun urlDecode(s: String): String = URLDecoder.decode(s, "UTF-8")
