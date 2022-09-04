@@ -54,18 +54,18 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
 
     @Serializable
     class Keyword(
-        val tags: List<String>,
-        val count: Int,
-        val timeout: Int,
-        val at: Boolean,
-        val quality: String,
-        val replySuccess: String,
-        val imageFailDownload: String,
-        val replyFail: String,
-        val replyFetching: String,
-        val recallFetchingMessage: Boolean,
-        val download: Boolean,
-        val overrideDownloadPath: String,
+        val tags: List<String> = listOf(),
+        val count: Int = 1,
+        val timeout: Int = 60,
+        val at: Boolean = true,
+        val quality: String = "SAMPLE",
+        val replySuccess: String = "\$pic\n图片地址: https://lolibooru.moe/post/show/\$id\n标签: \$tags",
+        val imageFailDownload: String = "「图片下载失败」",
+        val replyFail: String = "\$quote获取失败，稍后再试吧",
+        val replyFetching: String = "\$quote正在获取中，请稍等",
+        val recallFetchingMessage: Boolean = true,
+        val download: Boolean = false,
+        val overrideDownloadPath: String = "",
     )
 
     @ValueName("api-base-url")
@@ -123,20 +123,7 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
     )
     val keywords by value(
         mapOf(
-            "来只萝莉" to Keyword(
-                listOf(),
-                1,
-                60,
-                false,
-                "SAMPLE",
-                "\$pic\n图片地址: https://lolibooru.moe/post/show/\$id\n标签: \$tags",
-                "「图片下载失败」",
-                "\$quote获取失败，稍后再试吧",
-                "\$quote正在获取中，请稍等",
-                true,
-                false,
-                ""
-            )
+            "来只萝莉" to Keyword()
         )
     )
 
