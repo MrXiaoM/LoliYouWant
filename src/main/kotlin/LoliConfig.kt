@@ -14,6 +14,8 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
             "....# 接口每次只能申请40张图片，过滤器会过滤掉一部分，故该数量仅供限制最多发送数量\n" +
             "....# 若数量大于等于2，将通过合并转发发送\n" +
             "....count: 1\n" +
+            "....# 单张图片的连接超时时间 (秒)\n" +
+            "....timeout: 60\n" +
             "....# 是否需要 @ 机器人来触发随机发图\n" +
             "....at: false\n" +
             "....# 返回图片的画质\n" +
@@ -54,6 +56,7 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
     class Keyword(
         val tags: List<String>,
         val count: Int,
+        val timeout: Int,
         val at: Boolean,
         val quality: String,
         val replySuccess: String,
@@ -113,6 +116,7 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
             "来只萝莉" to Keyword(
                 listOf(),
                 1,
+                60,
                 false,
                 "SAMPLE",
                 "\$pic\n图片地址: https://lolibooru.moe/post/show/\$id\n标签: \$tags",

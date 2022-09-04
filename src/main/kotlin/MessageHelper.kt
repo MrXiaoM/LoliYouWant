@@ -37,12 +37,17 @@ class PrepareUploadImage(
             contact: Contact,
             link: String,
             failedText: String = "",
-            success: (InputStream) -> InputStream = { it }
+            timeout: Int = 30,
+            success: (InputStream) -> InputStream = { it },
         ): PrepareUploadImage {
             return PrepareUploadImage(contact, {
                 try {
                     val conn = withContext(Dispatchers.IO) {
-                        URL(link).openConnection().also { it.connect() }
+                        URL(link).openConnection().also {
+                            it.connectTimeout = timeout * 1000
+                            it.readTimeout = timeout * 1000
+                            it.connect()
+                        }
                     }
                     return@PrepareUploadImage withContext(Dispatchers.IO) {
                         success(conn.getInputStream())
