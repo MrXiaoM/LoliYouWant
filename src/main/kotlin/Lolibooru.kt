@@ -80,7 +80,7 @@ fun url(site: String, path: String): String = site.removeSuffix("/") + "/" + pat
  */
 fun browserLikeUrlEncode(url: String): String {
     val u = URL(url)
-    val authority = if (u.authority != null && !u.authority.isEmpty()) "//${u.authority}" else ""
+    val authority = if (u.authority != null && u.authority.isNotEmpty()) "//${u.authority}" else ""
     val path = (u.path ?: "").split("/").joinToString("/") { urlEncode(it) }
     val query = if (u.query != null) ("?" + u.query.split("&").map {
         if (!it.contains("=")) it
