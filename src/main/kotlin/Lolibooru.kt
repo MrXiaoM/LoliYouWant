@@ -75,5 +75,20 @@ class Loli(
 
 fun url(site: String, path: String): String = site.removeSuffix("/") + "/" + path.removePrefix("/")
 
+/**
+ * @see java.net.URLStreamHandler.toExternalForm
+ */
+fun browserLikeUrlEncode(url: String): String {
+    val u = URL(url)
+    val authority = if (u.authority != null && !u.authority.isEmpty()) "//${u.authority}" else ""
+    val path = (u.path ?: "").split("/").joinToString("/") { urlEncode(it) }
+    val query = if (u.query != null) ("?" + u.query.split("&").map {
+        if (!it.contains("=")) it
+        else (it.substringBefore("=") + "=" + urlEncode(it.substringAfter("=")))
+    }) else ""
+    val ref = if (u.ref != null) "#${urlEncode(u.ref)}" else ""
+    return u.protocol + ':' + authority + path + query + ref
+}
+
 fun urlEncode(s: String): String = URLEncoder.encode(s, "UTF-8")
 fun urlDecode(s: String): String = URLDecoder.decode(s, "UTF-8")

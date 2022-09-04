@@ -149,17 +149,17 @@ object MessageHost : SimpleListenerHost() {
 }
 
 fun Loli.toReplacement(contact: Contact, keyword: LoliConfig.Keyword): Map<String, SingleMessage> {
-    val picUrl = when (keyword.quality) {
+    val picUrl = browserLikeUrlEncode(when (keyword.quality) {
         "FILE" -> url
         "PREVIEW" -> urlPreview
         else -> urlSample
-    }.replace(" ", "%20")
+    })
     return mapOf(
         "id" to PlainText(id.toString()),
-        "previewUrl" to PlainText(urlPreview.replace(" ", "%20")),
-        "sampleUrl" to PlainText(urlSample.replace(" ", "%20")),
-        "fileUrl" to PlainText(url.replace(" ", "%20")),
-        "url" to PlainText(picUrl.replace(" ", "%20")),
+        "previewUrl" to PlainText(browserLikeUrlEncode(urlPreview)),
+        "sampleUrl" to PlainText(browserLikeUrlEncode(urlSample)),
+        "fileUrl" to PlainText(browserLikeUrlEncode(url)),
+        "url" to PlainText(picUrl),
         "tags" to PlainText(tags),
         "rating" to PlainText(rating),
         "pic" to PrepareUploadImage.url(
@@ -169,7 +169,7 @@ fun Loli.toReplacement(contact: Contact, keyword: LoliConfig.Keyword): Map<Strin
             val folder =
                 LoliYouWant.resolveDataFile(keyword.overrideDownloadPath.replace("\\", "/").removeSurrounding("/"))
             if (!folder.exists()) folder.mkdirs()
-            val file = File(folder, picUrl.substringAfterLast('/').replace("%20", " "))
+            val file = File(folder, urlDecode(picUrl).substringAfterLast('/'))
 
             file.writeBytes(input.readBytes())
             return@url FileInputStream(file)
