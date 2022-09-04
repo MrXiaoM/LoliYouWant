@@ -107,7 +107,7 @@ object MessageHost : SimpleListenerHost() {
         val receipt = contact.sendMessage(keyword.replyFetching.replace(replacement))
 
         val tags = keyword.resolveTagsParams()
-        val loli = LoliYouWant.searchLolis(Lolibooru.get(10, 1, "order:random -rating:e -video $tags")).randomOrNull()
+        val loli = LoliYouWant.searchLolis(Lolibooru.get(10, 1, tags)).randomOrNull()
             ?: return Pair(false, receipt)
 
         replacement.putAll(loli.toReplacement(contact, keyword))
@@ -123,8 +123,8 @@ object MessageHost : SimpleListenerHost() {
     ): Pair<Boolean, MessageReceipt<Contact>> {
         val receipt = contact.sendMessage(keyword.replyFetching.replace(defReplacement))
 
-        val tags = keyword.tags.filter { !it.contains("rating:") }.joinToString(" ")
-        val lolies = LoliYouWant.searchLolis(Lolibooru.get(40, 1, "order:random -rating:e -video $tags"))
+        val tags = keyword.resolveTagsParams()
+        val lolies = LoliYouWant.searchLolis(Lolibooru.get(40, 1, tags))
         if (lolies.isEmpty()) return Pair(false, receipt)
 
         val forward = ForwardMessageBuilder(contact.bot.asFriend)
