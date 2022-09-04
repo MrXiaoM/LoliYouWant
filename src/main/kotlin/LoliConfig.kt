@@ -80,6 +80,10 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
     @ValueDescription("严格模式\n开启后将过滤掉评级为 q (衣物较少) 的图片")
     val strictMode by value(true)
 
+    @ValueName("does-add-tags-to-params")
+    @ValueDescription("是否将需要隐藏的 tag 添加到请求地址的参数中\n开启该选项，有助于在获取多张图片的情况下让图片数量尽可能多")
+    val doesAddTagsToParams by value(true)
+
     @ValueName("hidden-tags")
     @ValueDescription(
         "隐藏 tag 不合适的图片。\n" +

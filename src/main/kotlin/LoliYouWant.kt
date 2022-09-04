@@ -36,7 +36,7 @@ object LoliYouWant : KotlinPlugin(
         "thele",
         "vulva"
     )
-    private val blacklistTags = mutableListOf<String>()
+    internal val blacklistTags = mutableListOf<String>()
     lateinit var PERM_RANDOM: Permission
     lateinit var PERM_BYPASS_COOLDOWN: Permission
     lateinit var PERM_RELOAD: Permission
@@ -77,7 +77,7 @@ object LoliYouWant : KotlinPlugin(
         Lolibooru.baseUrl = LoliConfig.apiBaseUrl
         blacklistTags.clear()
         blacklistTags.addAll(r18Tags)
-        blacklistTags.addAll(LoliConfig.hiddenTags)
+        blacklistTags.addAll(LoliConfig.hiddenTags.map { it.trimStart().trimEnd().replace(" ","_") })
     }
 }
 

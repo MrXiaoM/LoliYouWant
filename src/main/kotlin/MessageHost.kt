@@ -106,36 +106,11 @@ object MessageHost : SimpleListenerHost() {
     ): Pair<Boolean, MessageReceipt<Contact>> {
         val receipt = contact.sendMessage(keyword.replyFetching.replace(replacement))
 
-        val tags = keyword.tags.filter { !it.contains("rating:") }.joinToString(" ")
+        val tags = keyword.resolveTagsParams()
         val loli = LoliYouWant.searchLolis(Lolibooru.get(10, 1, "order:random -rating:e -video $tags")).randomOrNull()
             ?: return Pair(false, receipt)
 
-        val url = when (keyword.quality) {
-            "FILE" -> loli.url
-            "PREVIEW" -> loli.urlPreview
-            else -> loli.urlSample
-        }.replace(" ", "%20")
-
-        replacement.putAll(mapOf(
-            "id" to PlainText(loli.id.toString()),
-            "previewUrl" to PlainText(loli.urlPreview.replace(" ", "%20")),
-            "sampleUrl" to PlainText(loli.urlSample.replace(" ", "%20")),
-            "fileUrl" to PlainText(loli.url.replace(" ", "%20")),
-            "url" to PlainText(url.replace(" ", "%20")),
-            "tags" to PlainText(loli.tags),
-            "rating" to PlainText(loli.rating),
-            "pic" to PrepareUploadImage.url(
-                contact, url, keyword.imageFailDownload
-            ) { input ->
-                if (!keyword.download) return@url input
-                val folder = LoliYouWant.resolveDataFile(keyword.overrideDownloadPath.replace("\\", "/").removeSurrounding("/"))
-                if (!folder.exists()) folder.mkdirs()
-                val file = File(folder, url.substringAfterLast('/').replace("%20", " "))
-
-                file.writeBytes(input.readBytes())
-                return@url FileInputStream(file)
-            }
-        ))
+        replacement.putAll(loli.toReplacement(contact, keyword))
 
         contact.sendMessage(keyword.replySuccess.replace(replacement))
         return Pair(true, receipt)
@@ -158,35 +133,8 @@ object MessageHost : SimpleListenerHost() {
         for (loli in lolies) {
             if (count >= keyword.count) break
 
-            val replacement = mutableMapOf<String, SingleMessage>()
-            replacement.putAll(defReplacement)
-
-            val url = when (keyword.quality) {
-                "FILE" -> loli.url
-                "PREVIEW" -> loli.urlPreview
-                else -> loli.urlSample
-            }.replace(" ", "%20")
-
-            replacement.putAll(mapOf(
-                "id" to PlainText(loli.id.toString()),
-                "previewUrl" to PlainText(loli.urlPreview.replace(" ", "%20")),
-                "sampleUrl" to PlainText(loli.urlSample.replace(" ", "%20")),
-                "fileUrl" to PlainText(loli.url.replace(" ", "%20")),
-                "url" to PlainText(url.replace(" ", "%20")),
-                "tags" to PlainText(loli.tags),
-                "rating" to PlainText(loli.rating),
-                "pic" to PrepareUploadImage.url(
-                    contact, url, keyword.imageFailDownload
-                ) { input ->
-                    if (!keyword.download) return@url input
-                    val folder = LoliYouWant.resolveDataFile(keyword.overrideDownloadPath.replace("\\", "/").removeSurrounding("/"))
-                    if (!folder.exists()) folder.mkdirs()
-                    val file = File(folder, url.substringAfterLast('/').replace("%20", " "))
-
-                    file.writeBytes(input.readBytes())
-                    return@url FileInputStream(file)
-                }
-            ))
+            val replacement = defReplacement.toMutableMap()
+            replacement.putAll(loli.toReplacement(contact, keyword))
 
             forward.add(
                 contact.bot,
@@ -199,6 +147,38 @@ object MessageHost : SimpleListenerHost() {
         return Pair(true, receipt)
     }
 }
+
+fun Loli.toReplacement(contact: Contact, keyword: LoliConfig.Keyword): Map<String, SingleMessage> {
+    val picUrl = when (keyword.quality) {
+        "FILE" -> url
+        "PREVIEW" -> urlPreview
+        else -> urlSample
+    }.replace(" ", "%20")
+    return mapOf(
+        "id" to PlainText(id.toString()),
+        "previewUrl" to PlainText(urlPreview.replace(" ", "%20")),
+        "sampleUrl" to PlainText(urlSample.replace(" ", "%20")),
+        "fileUrl" to PlainText(url.replace(" ", "%20")),
+        "url" to PlainText(picUrl.replace(" ", "%20")),
+        "tags" to PlainText(tags),
+        "rating" to PlainText(rating),
+        "pic" to PrepareUploadImage.url(
+            contact, picUrl, keyword.imageFailDownload, keyword.timeout
+        ) { input ->
+            if (!keyword.download) return@url input
+            val folder = LoliYouWant.resolveDataFile(keyword.overrideDownloadPath.replace("\\", "/").removeSurrounding("/"))
+            if (!folder.exists()) folder.mkdirs()
+            val file = File(folder, picUrl.substringAfterLast('/').replace("%20", " "))
+
+            file.writeBytes(input.readBytes())
+            return@url FileInputStream(file)
+        }
+    )
+}
+fun LoliConfig.Keyword.resolveTagsParams() = mutableListOf("order:random", "-rating:e", "-video").also { paramTags ->
+    if (LoliConfig.doesAddTagsToParams) paramTags.addAll(LoliYouWant.blacklistTags.map { "-$it" })
+    paramTags.addAll(tags.filter { !paramTags.contains("-$it") && !it.contains("rating:") && !it.contains("order:") })
+}.joinToString(" ")
 
 val Contact.permitteeIdOrNull: PermitteeId?
     get() = when (this) {
