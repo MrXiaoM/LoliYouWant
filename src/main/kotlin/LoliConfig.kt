@@ -69,8 +69,9 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
     )
 
     @ValueName("api-base-url")
-    @ValueDescription("Lolibooru 地址，结尾要带 /\n" +
-            "若无法访问，请尝试自行搭建反向代理站点")
+    @ValueDescription("Lolibooru 地址\n" +
+            "若无法访问，请尝试自行搭建反向代理站点\n" +
+            "填写该项时，结尾的 / 可以省略")
     val apiBaseUrl by value("https://lolibooru.moe/")
 
     @ValueName("enable-groups")

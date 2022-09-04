@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "top.mrxiaom"
-version = "0.1.2"
+version = "0.2.0"
 
 repositories {
     maven("https://maven.aliyun.com/repository/central")
