@@ -69,27 +69,33 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
     )
 
     @ValueName("api-base-url")
-    @ValueDescription("Lolibooru 地址，结尾要带 /\n若无法访问，请尝试自行搭建反向代理站点")
+    @ValueDescription("Lolibooru 地址，结尾要带 /\n" +
+            "若无法访问，请尝试自行搭建反向代理站点")
     val apiBaseUrl by value("https://lolibooru.moe/")
 
     @ValueName("enable-groups")
-    @ValueDescription("启用本插件的群聊列表\n除了修改配置外，你也可以给予权限")
+    @ValueDescription("启用本插件的群聊列表\n" +
+            "除了修改配置外，你也可以给予权限")
     val enableGroups by value(listOf<Long>())
 
     @ValueName("strict-mode")
-    @ValueDescription("严格模式\n开启后将过滤掉评级为 q (衣物较少) 的图片")
+    @ValueDescription("严格模式\n" +
+            "开启后将过滤掉评级为 q (衣物较少) 的图片")
     val strictMode by value(true)
 
     @ValueName("does-add-tags-to-params")
-    @ValueDescription("是否将需要隐藏的 tag 添加到请求地址的参数中\n开启该选项，有助于在获取多张图片的情况下让图片数量尽可能多")
+    @ValueDescription(
+        "是否将需要隐藏的 tag 添加到请求地址的参数中\n" +
+                "开启该选项，有助于在获取多张图片的情况下让图片数量尽可能多"
+    )
     val doesAddTagsToParams by value(true)
 
     @ValueName("hidden-tags")
     @ValueDescription(
         "隐藏 tag 不合适的图片。\n" +
                 "默认配置的 tag 将会过滤一些 r18 漏网之鱼和部分 r16 图片，减少可能违规的图片有助于机器人防封。\n" +
-                "其中 3dcg 为 3D 渲染的图片，即使是插件作者个人也欣赏不来，故添加。" +
-                "\n更新插件并不会更新这个列表，如有更新该列表的需求，请到本插件帖子中寻找。"
+                "其中 3dcg 为 3D 渲染的图片，即使是插件作者个人也欣赏不来，故添加。\n" +
+                "更新插件并不会更新这个列表，如有更新该列表的需求，请到本插件帖子中寻找。"
     )
     val hiddenTags by value(
         listOf(

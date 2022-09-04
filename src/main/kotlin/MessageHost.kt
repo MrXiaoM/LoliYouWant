@@ -166,7 +166,8 @@ fun Loli.toReplacement(contact: Contact, keyword: LoliConfig.Keyword): Map<Strin
             contact, picUrl, keyword.imageFailDownload, keyword.timeout
         ) { input ->
             if (!keyword.download) return@url input
-            val folder = LoliYouWant.resolveDataFile(keyword.overrideDownloadPath.replace("\\", "/").removeSurrounding("/"))
+            val folder =
+                LoliYouWant.resolveDataFile(keyword.overrideDownloadPath.replace("\\", "/").removeSurrounding("/"))
             if (!folder.exists()) folder.mkdirs()
             val file = File(folder, picUrl.substringAfterLast('/').replace("%20", " "))
 
@@ -175,6 +176,7 @@ fun Loli.toReplacement(contact: Contact, keyword: LoliConfig.Keyword): Map<Strin
         }
     )
 }
+
 fun LoliConfig.Keyword.resolveTagsParams() = mutableListOf("order:random", "-rating:e", "-video").also { paramTags ->
     if (LoliConfig.doesAddTagsToParams) paramTags.addAll(LoliYouWant.blacklistTags.map { "-$it" })
     paramTags.addAll(tags.filter { !paramTags.contains("-$it") && !it.contains("rating:") && !it.contains("order:") })

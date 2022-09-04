@@ -77,7 +77,7 @@ object LoliYouWant : KotlinPlugin(
         Lolibooru.baseUrl = LoliConfig.apiBaseUrl
         blacklistTags.clear()
         blacklistTags.addAll(r18Tags)
-        blacklistTags.addAll(LoliConfig.hiddenTags.map { it.trimStart().trimEnd().replace(" ","_") })
+        blacklistTags.addAll(LoliConfig.hiddenTags.map { it.trimStart().trimEnd().replace(" ", "_") })
     }
 }
 
