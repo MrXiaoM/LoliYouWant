@@ -3,8 +3,11 @@ package top.mrxiaom.loliyouwant
 import kotlinx.serialization.Serializable
 import net.mamoe.mirai.console.data.*
 import net.mamoe.mirai.console.util.ConsoleExperimentalApi
-import net.mamoe.mirai.message.data.MessageChain
-import net.mamoe.mirai.message.data.PlainText
+import net.mamoe.mirai.contact.Group
+import net.mamoe.mirai.contact.User
+import net.mamoe.mirai.message.data.*
+
+import top.mrxiaom.loliyouwant.EconomyHolder.CostResult.*
 
 object LoliConfig : ReadOnlyPluginConfig("config") {
     private const val DEFAULT_KEYWORD_YAML = "..来只萝莉:\n" +
@@ -50,7 +53,20 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
             "....# 是否顺便保存图片到本地 (data 文件夹)\n" +
             "....download: false\n" +
             "....# 重写图片保存路径，该路径相对于 data/top.mrxiaom.loliyouwant/\n" +
-            "....override-download-path: ''"
+            "....override-download-path: ''\n" +
+            "....# 执行命令所需金钱的货币类型\n" +
+            "....# 留空为不花费金钱\n" +
+            "....# 该功能需要安装 mirai-economy-core 插件生效\n" +
+            "....costMoneyCurrency: mirai-coin\n" +
+            "....# 执行命令所需金钱\n" +
+            "....costMoney: 10.0\n" +
+            "....# 是否从全局上下文扣除金钱\n" +
+            "....# 若关闭该项，将在用户执行命令所在群的上下文扣除金钱\n" +
+            "....# 私聊执行命令将强制使用全局上下文\n" +
+            "....costMoneyGlobal: false\n" +
+            "....# 执行命令金钱不足提醒\n" +
+            "....# \$at 为 @ 发送者，\$quote 为回复发送者，\$cost 为需要花费的金钱\n" +
+            "....costMoneyNotEnough: \"\$quote你没有足够的 Mirai 币 (\$cost) 来执行该命令!\""
 
     @Serializable
     class Keyword(
@@ -66,7 +82,35 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
         val recallFetchingMessage: Boolean = true,
         val download: Boolean = false,
         val overrideDownloadPath: String = "",
-    )
+        val costMoneyCurrency: String = "mirai-coin",
+        val costMoney: Double = 10.0,
+        val costMoneyGlobal: Boolean = false,
+        val costMoneyNotEnough: String ="\$quote你没有足够的 Mirai 币 (\$cost) 来执行该命令!"
+    ) {
+        suspend fun costMoney(
+            group: Group?,
+            user: User,
+            source: MessageSource
+        ): Boolean = when(
+            if (costMoneyGlobal || group == null) EconomyHolder.costMoney(user, costMoneyCurrency, costMoney)
+            else EconomyHolder.costMoney(group, user, costMoneyCurrency, costMoney)
+        ) {
+            NO_CURRENCY -> false.also { EconomyHolder.logger.warning("货币种类 `$costMoneyCurrency` 不存在") }
+            NOT_ENOUGH -> false.also {
+                (group ?: user).sendMessage(buildMessageChain {
+                    if (costMoneyNotEnough.contains("\$quote")) add(QuoteReply(source))
+                    addAll(Regex("\\\$at").split<SingleMessage>(
+                        costMoneyNotEnough
+                            .replace("\$cost", costMoney.toString())
+                            .replace("\$quote", "")
+                    ) { s, isMatched ->
+                        if (isMatched) At(user.id) else PlainText(s)
+                    })
+                })
+            }
+            else -> true
+        }
+    }
 
     @ValueName("api-base-url")
     @ValueDescription("Lolibooru 地址\n" +
@@ -175,4 +219,33 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
             LoliYouWant.logger.error(e)
         }
     }
+}
+
+/**
+ * 分隔字符串
+ * @param input 需要分隔的字符串
+ * @param transform 转换器，返回 null 时不添加该项到结果
+ */
+fun <T> Regex.split(
+    input: CharSequence,
+    transform: (s: String, isMatched: Boolean) -> T?
+): List<T> {
+    val list = mutableListOf<T>()
+    var index = 0
+    for (result in findAll(input)) {
+        val first = result.range.first
+        val last = result.range.last
+        if (first > index) {
+            val value = transform(input.substring(index, first), false)
+            if (value != null) list.add(value)
+        }
+        val value = transform(input.substring(first, last + 1), true)
+        if (value != null) list.add(value)
+        index = last + 1
+    }
+    if (index < input.length) {
+        val value = transform(input.substring(index), false)
+        if (value != null) list.add(value)
+    }
+    return list
 }

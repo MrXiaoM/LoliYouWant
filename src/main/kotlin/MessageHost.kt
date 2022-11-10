@@ -47,6 +47,9 @@ object MessageHost : SimpleListenerHost() {
             LoliYouWant.cooldown[event.group.id] = System.currentTimeMillis() + LoliConfig.cooldown * 1000
         }
 
+        // 经济系统
+        if (!keyword.costMoney(event.group, event.sender, event.source)) return
+
         // 获取图片并发送
         val result =
             if (keyword.count > 1) sendLoliPictureCollection(event.group, keyword, replacement) else sendLoliPicture(
@@ -84,6 +87,9 @@ object MessageHost : SimpleListenerHost() {
             // 无权限时才设置冷却
             LoliYouWant.cooldownFriend[event.sender.id] = System.currentTimeMillis() + LoliConfig.cooldown * 1000
         }
+
+        // 经济系统
+        if (!keyword.costMoney(null, event.sender, event.source)) return
 
         // 获取图片并发送
         val result =

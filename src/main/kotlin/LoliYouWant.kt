@@ -8,6 +8,7 @@ import net.mamoe.mirai.console.plugin.id
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
 import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
 import net.mamoe.mirai.contact.Contact
+import net.mamoe.mirai.event.GlobalEventChannel
 import net.mamoe.mirai.event.globalEventChannel
 import net.mamoe.mirai.event.registerTo
 import net.mamoe.mirai.message.MessageReceipt
@@ -20,6 +21,8 @@ object LoliYouWant : KotlinPlugin(
         version = "0.1.0",
     ) {
         author("MrXiaoM")
+
+        dependsOn("xyz.cssxsh.mirai.plugin.mirai-economy-core", true)
     }
 ) {
     private val r18Tags = listOf(
@@ -46,6 +49,11 @@ object LoliYouWant : KotlinPlugin(
         PERM_RANDOM = PermissionService.INSTANCE.register(PermissionId(id, "random"), "随机发图权限")
         PERM_BYPASS_COOLDOWN = PermissionService.INSTANCE.register(PermissionId(id, "bypass.cooldown"), "绕过冷却时间")
         PERM_RELOAD = PermissionService.INSTANCE.register(PermissionId(id, "reload"), "重载配置文件")
+
+        logger.info(when (EconomyHolder.hasEconomyCorePlugin) {
+            true -> "已安装经济插件"
+            false -> "未安装经济插件"
+        })
 
         reloadConfig()
         LoliCommand(PERM_RELOAD).register()
