@@ -195,7 +195,7 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
     fun resolveKeyword(message: MessageChain, at: Boolean): Keyword? {
         val key = message.filterIsInstance<PlainText>().joinToString { it.content }.trimStart().trimEnd()
         val keyword = keywords[key] ?: return null
-        return if (keyword.at && !at) null else keyword
+        return if (keyword.at && !at) keyword else null
     }
 
     @OptIn(ConsoleExperimentalApi::class)
