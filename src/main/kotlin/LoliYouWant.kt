@@ -73,9 +73,8 @@ object LoliYouWant : KotlinPlugin(
     }
 
     fun checkTags(loli: Loli): Boolean {
-        for (tag in blacklistTags) {
-            if (loli.tags.contains(tag)) return false
-        }
+        if (loli.tags.split(" ").size < LoliConfig.hiddenTagsCount) return false
+        if (blacklistTags.any { loli.tags.contains(it) }) return false
         return true
     }
 

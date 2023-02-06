@@ -159,6 +159,11 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
         )
     )
 
+    @ValueName("hidden-when-tags-less-than")
+    @ValueDescription("屏蔽tag数量少于不等于这个数字的图片\n" +
+            "部分老旧的图片分级不明确，无法根据tag进行进一步分级")
+    val hiddenTagsCount by value(26)
+
     @ValueName("keywords")
     @ValueDescription(
         "随机发图的关键词，可自由添加\n" +
