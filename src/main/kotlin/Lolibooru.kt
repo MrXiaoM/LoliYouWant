@@ -15,6 +15,9 @@ import java.net.URLEncoder
 object Lolibooru {
     private val logger = MiraiLogger.Factory.create(this::class, "Lolibooru")
     private const val defaultApi = "https://lolibooru.moe/"
+    private val json = Json {
+        ignoreUnknownKeys = true
+    }
     var baseUrl = "https://lolibooru.moe/"
 
     /**
@@ -37,9 +40,9 @@ object Lolibooru {
             }
 
             logger.verbose("Response json: $jsonString")
-            val json = Json.parseToJsonElement(jsonString).jsonArray
-            json.map {
-                val loli = Json.decodeFromJsonElement(JsonLoli.serializer(), it)
+            val array = json.parseToJsonElement(jsonString).jsonArray
+            array.map {
+                val loli = json.decodeFromJsonElement(JsonLoli.serializer(), it)
                 Loli(
                     loli.id,
                     loli.fileUrl.replace(defaultApi, apiUrl),
@@ -103,8 +106,6 @@ class Loli(
     val tags: String,
     val rating: String
 )
-
-fun url(site: String, path: String): String = site.removeSuffix("/") + "/" + path.removePrefix("/")
 
 /**
  * @see java.net.URLStreamHandler.toExternalForm
