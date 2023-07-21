@@ -9,29 +9,12 @@ import net.mamoe.mirai.event.events.UserMessageEvent
 import net.mamoe.mirai.message.data.*
 import kotlin.random.Random
 
-class LoliCommand(perm: Permission) : CompositeCommand(
+object LoliCommand: CompositeCommand(
     owner = LoliYouWant,
     primaryName = "LoliYouWant",
     secondaryNames = arrayOf("loli", "luw"),
-    parentPermission = perm
+    description = "LoliYouWant 主命令"
 ) {
-    @SubCommand
-    @Description("重载插件配置文件")
-    suspend fun CommandSender.reload() {
-        LoliYouWant.reloadConfig()
-        sendMessage(LoliConfig.msgReload)
-    }
-
-    @SubCommand
-    @Description("获取已载入的关键词列表")
-    suspend fun CommandSender.keywords() {
-        sendMessage("关键词列表 (${LoliConfig.keywords.size}):\n" + LoliConfig.keywords.map {
-            "   ${it.key} (获取 ${it.value.count} 张图) 标签: " + (if (it.value.tags.isEmpty()) "(无)" else it.value.tags.joinToString(
-                " "
-            ))
-        }.joinToString("\n"))
-    }
-
     @SubCommand
     @Description("获取一张图片")
     @OptIn(ConsoleExperimentalApi::class)

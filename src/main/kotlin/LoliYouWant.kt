@@ -42,13 +42,11 @@ object LoliYouWant : KotlinPlugin(
     internal val blacklistTags = mutableListOf<String>()
     lateinit var PERM_RANDOM: Permission
     lateinit var PERM_BYPASS_COOLDOWN: Permission
-    lateinit var PERM_RELOAD: Permission
     internal val cooldown = mutableMapOf<Long, Long>()
     internal val cooldownFriend = mutableMapOf<Long, Long>()
     override fun onEnable() {
-        PERM_RANDOM = PermissionService.INSTANCE.register(PermissionId(id, "random"), "随机发图权限")
+        PERM_RANDOM = PermissionService.INSTANCE.register(PermissionId(id, "random"), "关键词随机发图权限")
         PERM_BYPASS_COOLDOWN = PermissionService.INSTANCE.register(PermissionId(id, "bypass.cooldown"), "绕过冷却时间")
-        PERM_RELOAD = PermissionService.INSTANCE.register(PermissionId(id, "reload"), "重载配置文件")
 
         logger.info(when (EconomyHolder.hasEconomyCorePlugin) {
             true -> "已安装经济插件"
@@ -56,7 +54,8 @@ object LoliYouWant : KotlinPlugin(
         })
 
         reloadConfig()
-        LoliCommand(PERM_RELOAD).register()
+        LoliCommand.register()
+        LoliAdminCommand.register()
 
         MessageHost.registerTo(globalEventChannel(coroutineContext))
 
