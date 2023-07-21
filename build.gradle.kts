@@ -16,6 +16,7 @@ repositories {
 
 dependencies {
     compileOnly("xyz.cssxsh.mirai:mirai-economy-core:1.0.0-M1")
+    compileOnly("net.mamoe.yamlkt:yamlkt:0.12.0")
 }
 
 mirai {
