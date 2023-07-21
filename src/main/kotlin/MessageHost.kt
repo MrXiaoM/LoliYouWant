@@ -15,6 +15,7 @@ import net.mamoe.mirai.message.MessageReceipt
 import net.mamoe.mirai.message.data.*
 import java.io.File
 import java.io.FileInputStream
+import kotlin.random.Random
 
 object MessageHost : SimpleListenerHost() {
 
@@ -112,8 +113,8 @@ object MessageHost : SimpleListenerHost() {
     ): Pair<Boolean, MessageReceipt<Contact>> {
         val receipt = contact.sendMessage(keyword.replyFetching.replace(replacement))
 
-        val tags = keyword.resolveTagsParams()
-        val loli = LoliYouWant.searchLolis(Lolibooru.get(10, 1, tags)).randomOrNull()
+        val tags = keyword.tags.resolveTagsParams()
+        val loli = LoliYouWant.searchLolis(Lolibooru.get(10, Random.nextInt(1, 11), tags)).randomOrNull()
             ?: return Pair(false, receipt)
 
         replacement.putAll(loli.toReplacement(contact, keyword))
@@ -129,16 +130,13 @@ object MessageHost : SimpleListenerHost() {
     ): Pair<Boolean, MessageReceipt<Contact>> {
         val receipt = contact.sendMessage(keyword.replyFetching.replace(defReplacement))
 
-        val tags = keyword.resolveTagsParams()
-        val lolies = LoliYouWant.searchLolis(Lolibooru.get(40, 1, tags))
+        val tags = keyword.tags.resolveTagsParams()
+        val lolies = LoliYouWant.searchLolis(Lolibooru.get(40, Random.nextInt(1, 11), tags)).chunked(keyword.count)[0]
         if (lolies.isEmpty()) return Pair(false, receipt)
 
         val forward = ForwardMessageBuilder(contact.bot.asFriend)
 
-        var count = 0
         for (loli in lolies) {
-            if (count >= keyword.count) break
-
             val replacement = defReplacement.toMutableMap()
             replacement.putAll(loli.toReplacement(contact, keyword))
 
@@ -147,15 +145,14 @@ object MessageHost : SimpleListenerHost() {
                 keyword.replySuccess.replace(replacement),
                 (System.currentTimeMillis() / 1000).toInt()
             )
-            count++
         }
         contact.sendMessage(forward.build())
         return Pair(true, receipt)
     }
 }
 
-fun Loli.toReplacement(contact: Contact, keyword: LoliConfig.Keyword): Map<String, SingleMessage> {
-    val picUrl = browserLikeUrlEncode(when (keyword.quality) {
+fun Loli.toReplacement(contact: Contact, keyword: LoliConfig.Keyword? = null): Map<String, SingleMessage> {
+    val picUrl = browserLikeUrlEncode(when (keyword?.quality ?: LoliConfig.quality) {
         "FILE" -> url
         "PREVIEW" -> urlPreview
         else -> urlSample
@@ -169,11 +166,14 @@ fun Loli.toReplacement(contact: Contact, keyword: LoliConfig.Keyword): Map<Strin
         "tags" to PlainText(tags),
         "rating" to PlainText(rating),
         "pic" to PrepareUploadImage.url(
-            contact, picUrl, keyword.imageFailDownload, keyword.timeout
+            contact, picUrl,
+            keyword?.imageFailDownload ?: LoliConfig.imageFailDownload,
+            keyword?.timeout ?: LoliConfig.timeout
         ) { input ->
-            if (!keyword.download) return@url input
+            if (!(keyword?.download ?: LoliConfig.download)) return@url input
             val folder =
-                LoliYouWant.resolveDataFile(keyword.overrideDownloadPath.replace("\\", "/").removeSurrounding("/"))
+                LoliYouWant.resolveDataFile((keyword?.overrideDownloadPath ?: LoliConfig.overrideDownloadPath)
+                    .replace("\\", "/").removeSurrounding("/"))
             if (!folder.exists()) folder.mkdirs()
             val file = File(folder, urlDecode(picUrl).substringAfterLast('/'))
 
@@ -183,9 +183,9 @@ fun Loli.toReplacement(contact: Contact, keyword: LoliConfig.Keyword): Map<Strin
     )
 }
 
-fun LoliConfig.Keyword.resolveTagsParams() = mutableListOf("order:random", "-rating:e", "-video").also { paramTags ->
+fun List<String>.resolveTagsParams() = mutableListOf("order:random", "-rating:e", "-video").also { paramTags ->
     if (LoliConfig.doesAddTagsToParams) paramTags.addAll(LoliYouWant.blacklistTags.map { "-$it" })
-    paramTags.addAll(tags.filter { !paramTags.contains("-$it") && !it.contains("rating:") && !it.contains("order:") })
+    paramTags.addAll(filter { !paramTags.contains("-$it") && !it.contains("rating:") && !it.contains("order:") })
 }.joinToString(" ")
 
 val Contact.permitteeIdOrNull: PermitteeId?
