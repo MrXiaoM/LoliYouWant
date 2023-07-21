@@ -18,7 +18,7 @@ object LoliYouWant : KotlinPlugin(
     JvmPluginDescription(
         id = "top.mrxiaom.loliyouwant",
         name = "Loli You Want",
-        version = "0.2.2",
+        version = BuildConstants.VERSION,
     ) {
         author("MrXiaoM")
 
