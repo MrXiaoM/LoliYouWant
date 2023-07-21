@@ -187,7 +187,7 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
     """)
     val hiddenTags by value(
         listOf(
-            "panties",
+            "pantie",
             "pantsu",
             "underwear",
             "navel",
@@ -198,7 +198,35 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
             "bottomless",
             "groin",
             "butt",
-            "3dcg"
+            "3dcg",
+            "comic",
+            "bum",
+            "backside",
+            "fanny",
+            "bunny",
+            "bunny_girl",
+            "less",
+            "bottom",
+            "kiss",
+            "swimsuit",
+            "sukusui",
+            "towel",
+            "naked_towel",
+            "denim",
+            "armpits",
+            "ribs",
+            "bare_shoulders",
+            "translation_request",
+            "no_bra",
+            "blush",
+            "ass",
+            "absurdres",
+            "head_out_of_frame",
+            "spats",
+            "short",
+            "short_under_skrit",
+            "short_skrit",
+            "thighhighs"
         )
     )
 
