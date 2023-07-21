@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "top.mrxiaom"
-version = "0.2.4"
+version = "0.2.5"
 
 repositories {
     maven("https://maven.aliyun.com/repository/central")
@@ -15,7 +15,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly("xyz.cssxsh.mirai:mirai-economy-core:1.0.0-M1")
+    compileOnly("xyz.cssxsh.mirai:mirai-economy-core:1.0.6")
     compileOnly("net.mamoe.yamlkt:yamlkt:0.12.0")
 }
 
