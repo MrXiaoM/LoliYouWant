@@ -18,44 +18,46 @@
 
 到 [Releases](https://github.com/MrXiaoM/LoliYouWant/releases) 下载插件并放入 plugins 文件夹进行安装
 
-> 2.11 或以上下载 LoliYouWant-*.mirai2.jar
->
-> 2.11 以下下载 LoliYouWant-legacy-*.mirai.jar
-
-安装完毕后，编辑配置文件作出你想要的修改。在控制台执行 `/luw reload` 重载配置即可~
+安装完毕后，编辑配置文件作出你想要的修改。在控制台执行 `/luwadmin reload` 重载配置即可~
 
 配置文件内有详细的注释，详见 [源码](src/main/kotlin/LoliConfig.kt)  
 > 配置文件路径是  
-> (2.11 或以上) `./config/top.mrxiaom.loliyouwant/config.yml`  
-> (2.11 以下) `./config/Loli You Want/config.yml`
->
+> `./config/top.mrxiaom.loliyouwant/config.yml`
 
 ## 命令
 
-| 命令          | 解释     |
-|-------------|--------|
-| /luw reload | 重载配置文件 |
+| 命令                       | 解释                                                     |
+|--------------------------|--------------------------------------------------------|
+| /loli get <tags>         | 根据tags获取一张图片，多个tag用空格分开，tag只能为英文，tag中的空格用下划线代替，不支持模糊搜索 |
+| /loli list <数量> <tags>   | 根据tags获取多张图片，同上                                        |
+| /loliadmin reload        | 重载配置文件                                                 |
+| /loliadmin keywords      | 查看已载入的关键词配置                                            |
 
 ## 权限
-| 权限                                      | 解释         |
-|-----------------------------------------|------------|
-| top.mrxiaom.loliyouwant:random          | 允许使用随机图片功能 |
-| top.mrxiaom.loliyouwant:reload          | 允许重载插件配置文件 |
-| top.mrxiaom.loliyouwant:bypass.cooldown | 无视冷却时间     |
+
+| 权限                                               | 解释                 |
+|--------------------------------------------------|--------------------|
+| top.mrxiaom.loliyouwant:command.loliyouwant      | 允许使用 /loli 命令      |
+| top.mrxiaom.loliyouwant:command.loliyouwantadmin | 允许使用 /loliadmin 命令 |
+| top.mrxiaom.loliyouwant:random                   | 允许使用关键词随机图片功能      |
+| top.mrxiaom.loliyouwant:bypass.cooldown          | 无视冷却时间             |
 
 > 提示：可通过以下命令给权限  
-> `/perm permit g群号 权限`  
-> `/perm permit g群号.群友QQ号 权限`  
-> `/perm permit m群友QQ号 权限`
-
+> ```
+> /perm permit g群号 权限  
+> /perm permit g群号.群友QQ号 权限  
+> /perm permit m群友QQ号 权限  
+> /perm permit QQ号 权限
+> ```
+> 
 ## 用法
 
-发送关键词 `来只萝莉` 即可，剩下的详见配置文件。
+给予权限后，发送 `@机器人 来只萝莉` 即可，空格可不加，剩下的详见配置文件。
 
 ## 编译
 
 ```
-./gradlew buildPlugin buildPluginLegacy
+./gradlew buildPlugin
 ```
 
 ## 捐助
