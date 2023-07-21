@@ -2,7 +2,7 @@
 
 > 「你想要的插件」系列作品
 
-[![](https://shields.io/github/downloads/MrXiaoM/LoliYouWant/total)](https://github.com/MrXiaoM/LoliYouWant/releases) [![](https://img.shields.io/badge/mirai--console-2.11-blue)](https://github.com/mamoe/mirai) [![](https://img.shields.io/badge/MiraiForum-post-yellow)](https://mirai.mamoe.net/topic/1515)
+[![](https://shields.io/github/downloads/MrXiaoM/LoliYouWant/total)](https://github.com/MrXiaoM/LoliYouWant/releases) [![](https://img.shields.io/badge/mirai--console-2.15.0-blue)](https://github.com/mamoe/mirai) [![](https://img.shields.io/badge/MiraiForum-post-yellow)](https://mirai.mamoe.net/topic/1515)
 
 刑，真是太刑了。
 
