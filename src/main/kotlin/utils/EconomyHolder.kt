@@ -1,8 +1,10 @@
-package top.mrxiaom.loliyouwant.api
+package top.mrxiaom.loliyouwant.utils
 
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.User
+import net.mamoe.mirai.message.data.*
 import net.mamoe.mirai.utils.MiraiLogger
+import top.mrxiaom.loliyouwant.split
 import xyz.cssxsh.mirai.economy.EconomyService
 import xyz.cssxsh.mirai.economy.economy
 import xyz.cssxsh.mirai.economy.globalEconomy
@@ -62,5 +64,33 @@ object EconomyHolder {
             account -= (currency to money)
             return@economy CostResult.SUCCESS
         }
+    }
+
+    suspend fun costMoney(
+        group: Group?,
+        user: User,
+        source: MessageSource,
+        costMoney: Double,
+        costMoneyGlobal: Boolean,
+        costMoneyCurrency: String,
+        costMoneyNotEnough: String,
+    ): Boolean = when(
+        if (costMoneyGlobal || group == null) costMoney(user, costMoneyCurrency, costMoney)
+        else costMoney(group, user, costMoneyCurrency, costMoney)
+    ) {
+        CostResult.NO_CURRENCY -> false.also { logger.warning("货币种类 `$costMoneyCurrency` 不存在") }
+        CostResult.NOT_ENOUGH -> false.also {
+            (group ?: user).sendMessage(buildMessageChain {
+                if (costMoneyNotEnough.contains("\$quote")) add(QuoteReply(source))
+                addAll(Regex("\\\$at").split<SingleMessage>(
+                    costMoneyNotEnough
+                        .replace("\$cost", costMoney.toString())
+                        .replace("\$quote", "")
+                ) { s, isMatched ->
+                    if (isMatched) At(user.id) else PlainText(s)
+                })
+            })
+        }
+        else -> true
     }
 }

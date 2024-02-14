@@ -5,11 +5,11 @@ import net.mamoe.mirai.console.data.*
 import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.User
-import net.mamoe.mirai.message.data.*
+import net.mamoe.mirai.message.data.MessageChain
+import net.mamoe.mirai.message.data.MessageSource
+import net.mamoe.mirai.message.data.PlainText
 import net.mamoe.yamlkt.Comment
-import top.mrxiaom.loliyouwant.api.EconomyHolder
-
-import top.mrxiaom.loliyouwant.api.EconomyHolder.CostResult.*
+import top.mrxiaom.loliyouwant.utils.EconomyHolder
 
 object LoliConfig : ReadOnlyPluginConfig("config") {
     @Serializable
@@ -95,24 +95,69 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
             group: Group?,
             user: User,
             source: MessageSource
-        ): Boolean = when(
-            if (costMoneyGlobal || group == null) EconomyHolder.costMoney(user, costMoneyCurrency, costMoney)
-            else EconomyHolder.costMoney(group, user, costMoneyCurrency, costMoney)
-        ) {
-            NO_CURRENCY -> false.also { EconomyHolder.logger.warning("货币种类 `$costMoneyCurrency` 不存在") }
-            NOT_ENOUGH -> false.also {
-                (group ?: user).sendMessage(buildMessageChain {
-                    if (costMoneyNotEnough.contains("\$quote")) add(QuoteReply(source))
-                    addAll(Regex("\\\$at").split<SingleMessage>(
-                        costMoneyNotEnough
-                            .replace("\$cost", costMoney.toString())
-                            .replace("\$quote", "")
-                    ) { s, isMatched ->
-                        if (isMatched) At(user.id) else PlainText(s)
-                    })
-                })
+        ): Boolean = EconomyHolder.costMoney(
+            group,
+            user,
+            source,
+            costMoney,
+            costMoneyGlobal,
+            costMoneyCurrency,
+            costMoneyNotEnough
+        )
+    }
+
+    @Serializable
+    data class CommandEconomy(
+        @Comment("""
+        执行命令所需金钱的货币类型
+        留空为不花费金钱
+        该功能需要安装 mirai-economy-core 插件生效
+        """)
+        val costMoneyCurrency: String = "mirai-coin",
+        @Comment("""
+        执行命令所需金钱单价
+        最终价格为 {costMoney} * {图片张数} * {costMoneyPictureMultiplier}
+        """)
+        val costMoney: Double = 10.0,
+        @Comment("""
+        每张图片的价格乘数
+        如果设置为0或负数，最终价格为 {costMoney}
+        """)
+        val costMoneyPictureMultiplier: Double = 1.0,
+        @Comment("""
+        是否从全局上下文扣除金钱
+        若关闭该项, 将在用户执行命令所在群的上下文扣除金钱
+        私聊执行命令将强制使用全局上下文
+        """)
+        val costMoneyGlobal: Boolean = false,
+        @Comment("""
+        执行命令金钱不足提醒
+        ${'$'}at 为 @ 发送者
+        ${'$'}quote 为回复发送者
+        ${'$'}cost 为需要花费的金钱
+        """)
+        val costMoneyNotEnough: String ="\$quote你没有足够的 Mirai 币 (\$cost) 来执行该命令!"
+    ) {
+        suspend fun costMoney(
+            group: Group?,
+            user: User,
+            source: MessageSource,
+            count: Int
+        ): Boolean {
+            val money: Double = if (costMoneyPictureMultiplier > 0) {
+                costMoney * count * costMoneyPictureMultiplier
+            } else {
+                costMoney
             }
-            else -> true
+            return EconomyHolder.costMoney(
+                group,
+                user,
+                source,
+                money,
+                costMoneyGlobal,
+                costMoneyCurrency,
+                costMoneyNotEnough
+            )
         }
     }
 
@@ -243,6 +288,10 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
     @ValueName("command-retry-times")
     @ValueDescription("使用命令获取失败时的重试次数")
     val commandRetryTimes by value(5)
+
+    @ValueName("command-economy")
+    @ValueDescription("使用命令获取图片时的经济消耗设置")
+    val commandEconomy by value(CommandEconomy())
 
     @ValueName("keywords")
     @ValueDescription("随机发图的关键词, 可自由添加")

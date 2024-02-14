@@ -12,11 +12,11 @@ import net.mamoe.mirai.event.globalEventChannel
 import net.mamoe.mirai.event.registerTo
 import net.mamoe.mirai.message.MessageReceipt
 import net.mamoe.mirai.utils.info
-import top.mrxiaom.loliyouwant.api.EconomyHolder
 import top.mrxiaom.loliyouwant.api.Loli
 import top.mrxiaom.loliyouwant.api.Lolibooru
 import top.mrxiaom.loliyouwant.commands.LoliAdminCommand
 import top.mrxiaom.loliyouwant.commands.LoliCommand
+import top.mrxiaom.loliyouwant.utils.EconomyHolder
 
 object LoliYouWant : KotlinPlugin(
     JvmPluginDescription(

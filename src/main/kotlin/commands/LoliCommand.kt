@@ -1,7 +1,10 @@
 package top.mrxiaom.loliyouwant.commands
 
-import net.mamoe.mirai.console.command.*
+import net.mamoe.mirai.console.command.CommandSenderOnMessage
+import net.mamoe.mirai.console.command.CompositeCommand
 import net.mamoe.mirai.console.util.ConsoleExperimentalApi
+import net.mamoe.mirai.console.util.cast
+import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.data.*
@@ -40,7 +43,12 @@ object LoliCommand: CompositeCommand(
             cooldown[fromEvent.subject.id] = System.currentTimeMillis() + LoliConfig.cooldown * 1000
         }
 
-        // TODO 经济系统
+        // 经济系统
+        if (!LoliConfig.commandEconomy.costMoney(
+                group = fromEvent.subject.takeIf { it is Group }?.cast(),
+                user = fromEvent.sender,
+                source = fromEvent.source,
+                count = 1)) return
 
         val receipt = sendMessage(LoliConfig.replyFetching.replace(replacement))
 
@@ -106,7 +114,12 @@ object LoliCommand: CompositeCommand(
             cooldown[fromEvent.subject.id] = System.currentTimeMillis() + LoliConfig.cooldown * 1000
         }
 
-        // TODO 经济系统
+        // 经济系统
+        if (!LoliConfig.commandEconomy.costMoney(
+                group = fromEvent.subject.takeIf { it is Group }?.cast(),
+                user = fromEvent.sender,
+                source = fromEvent.source,
+                count = count)) return
 
         val receipt = sendMessage(LoliConfig.replyFetching.replace(replacement))
 
