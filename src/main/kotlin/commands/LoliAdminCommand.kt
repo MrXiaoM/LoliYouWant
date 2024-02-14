@@ -1,13 +1,8 @@
-package top.mrxiaom.loliyouwant
+package top.mrxiaom.loliyouwant.commands
 
 import net.mamoe.mirai.console.command.*
-import net.mamoe.mirai.console.permission.Permission
-import net.mamoe.mirai.console.util.ConsoleExperimentalApi
-import net.mamoe.mirai.contact.Member
-import net.mamoe.mirai.contact.User
-import net.mamoe.mirai.event.events.UserMessageEvent
-import net.mamoe.mirai.message.data.*
-import kotlin.random.Random
+import top.mrxiaom.loliyouwant.LoliConfig
+import top.mrxiaom.loliyouwant.LoliYouWant
 
 object LoliAdminCommand: CompositeCommand(
     owner = LoliYouWant,

@@ -13,6 +13,12 @@ import net.mamoe.mirai.event.events.FriendMessageEvent
 import net.mamoe.mirai.event.events.GroupMessageEvent
 import net.mamoe.mirai.message.MessageReceipt
 import net.mamoe.mirai.message.data.*
+import top.mrxiaom.loliyouwant.api.Loli
+import top.mrxiaom.loliyouwant.api.Lolibooru
+import top.mrxiaom.loliyouwant.api.browserLikeUrlEncode
+import top.mrxiaom.loliyouwant.api.urlDecode
+import top.mrxiaom.loliyouwant.utils.PrepareUploadImage
+import top.mrxiaom.loliyouwant.utils.replace
 import java.io.File
 import java.io.FileInputStream
 import kotlin.random.Random

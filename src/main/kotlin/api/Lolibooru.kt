@@ -1,4 +1,4 @@
-package top.mrxiaom.loliyouwant
+package top.mrxiaom.loliyouwant.api
 
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable

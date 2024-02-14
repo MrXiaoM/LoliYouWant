@@ -7,8 +7,9 @@ import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.User
 import net.mamoe.mirai.message.data.*
 import net.mamoe.yamlkt.Comment
+import top.mrxiaom.loliyouwant.api.EconomyHolder
 
-import top.mrxiaom.loliyouwant.EconomyHolder.CostResult.*
+import top.mrxiaom.loliyouwant.api.EconomyHolder.CostResult.*
 
 object LoliConfig : ReadOnlyPluginConfig("config") {
     @Serializable

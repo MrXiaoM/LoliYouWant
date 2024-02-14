@@ -1,14 +1,14 @@
-package top.mrxiaom.loliyouwant
+package top.mrxiaom.loliyouwant.commands
 
 import net.mamoe.mirai.console.command.*
-import net.mamoe.mirai.console.permission.Permission
 import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.contact.Member
-import net.mamoe.mirai.contact.User
-import net.mamoe.mirai.event.events.GroupMessageEvent
 import net.mamoe.mirai.event.events.MessageEvent
-import net.mamoe.mirai.event.events.UserMessageEvent
 import net.mamoe.mirai.message.data.*
+import top.mrxiaom.loliyouwant.*
+import top.mrxiaom.loliyouwant.api.Loli
+import top.mrxiaom.loliyouwant.api.Lolibooru
+import top.mrxiaom.loliyouwant.utils.replace
 import kotlin.random.Random
 
 object LoliCommand: CompositeCommand(

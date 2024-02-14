@@ -1,6 +1,5 @@
-package top.mrxiaom.loliyouwant
+package top.mrxiaom.loliyouwant.api
 
-import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.User
 import net.mamoe.mirai.utils.MiraiLogger
