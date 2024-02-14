@@ -59,10 +59,12 @@ class PrepareUploadImage(
             }, failedText)
         }
 
+        @JvmStatic
         fun Contact.prepareUploadImage(link: String, failedText: String = ""): PrepareUploadImage {
             return url(this, link, failedText)
         }
 
+        @JvmStatic
         fun Contact.prepareUploadAvatarImage(failedText: String = ""): PrepareUploadImage {
             return this.prepareUploadImage(this.avatarUrl, failedText)
         }
