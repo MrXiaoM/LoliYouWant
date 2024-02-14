@@ -25,6 +25,8 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
         val timeout: Int = 60,
         @Comment("是否需要 @ 机器人来触发随机发图")
         val at: Boolean = true,
+        @Comment("获取失败时重试次数")
+        val retryTimes: Int = 5,
         @Comment("""
         返回图片的画质
         PREVIEW - 低画质
@@ -236,6 +238,10 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
         部分老旧的图片分级不明确, 无法根据tag进行进一步分级
     """)
     val hiddenTagsCount by value(26)
+
+    @ValueName("command-retry-times")
+    @ValueDescription("使用命令获取失败时的重试次数")
+    val commandRetryTimes by value(5)
 
     @ValueName("keywords")
     @ValueDescription("随机发图的关键词, 可自由添加")

@@ -5,6 +5,8 @@ import net.mamoe.mirai.console.permission.Permission
 import net.mamoe.mirai.console.util.ConsoleExperimentalApi
 import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.User
+import net.mamoe.mirai.event.events.GroupMessageEvent
+import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.event.events.UserMessageEvent
 import net.mamoe.mirai.message.data.*
 import kotlin.random.Random
@@ -18,7 +20,9 @@ object LoliCommand: CompositeCommand(
     @SubCommand
     @Description("获取一张图片")
     @OptIn(ConsoleExperimentalApi::class)
-    suspend fun CommandSenderOnMessage<UserMessageEvent>.get(@Name("关键词") vararg keywords: String) {
+    suspend fun CommandSenderOnMessage<MessageEvent>.get(
+        @Name("关键词") vararg keywords: String
+    ) {
         val replacement: MutableMap<String, SingleMessage> = mutableMapOf("quote" to QuoteReply(fromEvent.source))
         if (fromEvent.sender is Member) replacement["at"] = At(fromEvent.sender)
 
@@ -41,15 +45,24 @@ object LoliCommand: CompositeCommand(
         val receipt = sendMessage(LoliConfig.replyFetching.replace(replacement))
 
         val tags = keywords.toList().resolveTagsParams()
-        val lolis = LoliYouWant.searchLolis(Lolibooru.get(40, Random.nextInt(1, 11), tags))
-        if (lolis.isEmpty()) {
+        val loli = run {
+            var count = LoliConfig.commandRetryTimes
+            var result: Loli? = null
+            while (result == null && count > 0) {
+                result = LoliYouWant.searchLolis(
+                    Lolibooru.get(40, Random.nextInt(1, 11), tags)
+                ).randomOrNull()
+                count--
+            }
+            result
+        }
+        if (loli == null) {
             if (LoliConfig.recallFetchingMessage) receipt?.recallIgnoreError()
             sendMessage(LoliConfig.replyFail.replace(replacement))
 
             cooldown[fromEvent.subject.id] = System.currentTimeMillis() + LoliConfig.failCooldown * 1000
             return
         }
-        val loli = lolis.random()
 
         replacement.putAll(loli.toReplacement(fromEvent.sender, null))
 
@@ -59,7 +72,10 @@ object LoliCommand: CompositeCommand(
     @SubCommand
     @Description("获取N张图片")
     @OptIn(ConsoleExperimentalApi::class)
-    suspend fun CommandSenderOnMessage<UserMessageEvent>.list(@Name("图片数量") count: Int, @Name("关键词") vararg keywords: String) {
+    suspend fun CommandSenderOnMessage<MessageEvent>.list(
+        @Name("图片数量") count: Int,
+        @Name("关键词") vararg keywords: String
+    ) {
         if (count > LoliConfig.maxSearchCount) {
             this.sendMessage(buildMessageChain {
                 if (LoliConfig.maxSearchCountWarn.contains("\$quote")) add(QuoteReply(fromEvent.source))
@@ -95,8 +111,19 @@ object LoliCommand: CompositeCommand(
         val receipt = sendMessage(LoliConfig.replyFetching.replace(replacement))
 
         val tags = keywords.toList().resolveTagsParams()
-        val lolis = LoliYouWant.searchLolis(Lolibooru.get(40, Random.nextInt(1, 11), tags)).chunked(count)[0]
-        if (lolis.isEmpty()) {
+        val lolies = arrayListOf<Loli>()
+        var retryCount = LoliConfig.commandRetryTimes
+        while (retryCount > 0) {
+            for (loli in LoliYouWant.searchLolis(
+                Lolibooru.get(40, Random.nextInt(1, 11), tags)
+            )) {
+                if (lolies.size >= count) break
+                lolies.add(loli)
+            }
+            if (lolies.size >= count) break
+            retryCount--
+        }
+        if (lolies.isEmpty()) {
             if (LoliConfig.recallFetchingMessage) receipt?.recallIgnoreError()
             sendMessage(LoliConfig.replyFail.replace(replacement))
 
@@ -106,7 +133,7 @@ object LoliCommand: CompositeCommand(
 
         val forward = ForwardMessageBuilder(fromEvent.bot.asFriend)
 
-        for (loli in lolis) {
+        for (loli in lolies) {
             val replace = replacement.toMutableMap()
             replace.putAll(loli.toReplacement(fromEvent.sender, null))
             forward.add(
