@@ -14,6 +14,7 @@ import top.mrxiaom.loliyouwant.*
 import top.mrxiaom.loliyouwant.api.Loli
 import top.mrxiaom.loliyouwant.api.Lolibooru
 import top.mrxiaom.loliyouwant.api.TencentTranslate
+import top.mrxiaom.loliyouwant.utils.EnglishWordUtil
 import top.mrxiaom.loliyouwant.utils.replace
 import java.util.regex.Pattern
 import kotlin.random.Random
@@ -81,7 +82,7 @@ object LoliCommand: CompositeCommand(
                 .filter { it.contains(" ") }
                 .map { it.split(" ", limit = 2).reversed().joinToString(" ") }
             )
-            tags.joinToString(",")
+            tags.joinToString(",").singularize()
         }.onFailure {
             LoliYouWant.logger.warning("翻译“$text”失败: ", it)
             if (LoliConfig.recallFetchingMessage) receipt?.recallIgnoreError()
@@ -200,4 +201,22 @@ private suspend fun CommandSenderOnMessage<MessageEvent>.fetchImage(
         )))
     }
     if (LoliConfig.recallFetchingMessage) receipt?.recallIgnoreError()
+}
+
+fun String.singularize(): String {
+    val s = this
+    return buildString {
+        var i = 0
+        val m = Pattern.compile("[A-Za-z]+").matcher(s)
+        while (m.find()) {
+            val first = m.start()
+            val last = m.end()
+            if (first > i) append(s.substring(i, first))
+            append(EnglishWordUtil.singularize(s.substring(first, last)))
+            i = last
+        }
+        if (i < s.length) {
+            append(s.substring(i))
+        }
+    }
 }
