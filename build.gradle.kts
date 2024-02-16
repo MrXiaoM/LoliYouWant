@@ -26,6 +26,8 @@ repositories {
 dependencies {
     compileOnly("xyz.cssxsh.mirai:mirai-economy-core:1.0.6")
     compileOnly("net.mamoe.yamlkt:yamlkt:0.12.0")
+
+    compileOnly("org.apache.httpcomponents:httpclient:4.5.14")
 }
 
 mirai {

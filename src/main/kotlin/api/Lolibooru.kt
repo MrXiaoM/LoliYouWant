@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalSerializationApi::class)
 package top.mrxiaom.loliyouwant.api
 
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -6,11 +7,13 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNames
 import kotlinx.serialization.json.jsonArray
 import net.mamoe.mirai.utils.MiraiLogger
+import top.mrxiaom.loliyouwant.utils.replace
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLDecoder
 import java.net.URLEncoder
+import java.util.regex.Pattern
 
 object Lolibooru {
     private val logger = MiraiLogger.Factory.create(this::class, "Lolibooru")
@@ -62,6 +65,67 @@ object Lolibooru {
         }
     }
 
+    fun search(api: String, text: String): List<Tag> {
+        return text.lowercase()
+            .replace(" ", "_")
+            .replace("_", "*")
+            .replace("，", ",")
+            .replace("、", ",")
+            .replace("。", ",")
+            .replace("；", ",")
+            .replace(";", ",")
+            .replace("/", ",")
+            .replace("\\", ",")
+            .replace("|", ",")
+            .split(",")
+            .mapNotNull { name ->
+            val result = search(api, "*${name.removeSurrounding("*")}*", TagOrder.COUNT, 1)
+            result.maxByOrNull { it.postCount }
+        }
+    }
+
+    /**
+     * 调用 Lolibooru 接口获取图片
+     * @param api 接口地址
+     * @param limit 限制返回数量
+     * @param page 页码，从1开始
+     * @param tags 搜索标签，请手动进行 URLEncode
+     */
+    fun search(api: String, name: String, order: TagOrder, limit: Int = 0, page: Int = 1): List<Tag> {
+        val apiUrl = api.removeSuffix("/") + "/"
+        return runCatching {
+            val jsonString = httpGet(apiUrl + "tag/index.json",
+                mutableMapOf<String, Any>(
+                    "limit" to limit,
+                    "page" to page,
+                    "name" to name,
+                    "order" to order.name.lowercase()
+                )
+            )!!.use {
+                it.readBytes().toString(Charsets.UTF_8)
+            }
+
+            logger.verbose("Search response json: $jsonString")
+            val array = json.parseToJsonElement(jsonString).jsonArray
+            array.map {
+                val tag = json.decodeFromJsonElement(JsonTag.serializer(), it)
+                Tag(
+                    tag.id,
+                    tag.name,
+                    tag.postCount,
+                    tag.tagType
+                )
+            }
+        }.getOrElse {
+            logger.error("Something was wrong when fetching images: ", it)
+            if (apiUrl != defaultApi) {
+                search(defaultApi, name, order, limit, page)
+            } else {
+                emptyList()
+            }
+        }
+    }
+
     /**
      * @see get
      */
@@ -86,7 +150,6 @@ object Lolibooru {
 }
 
 @Serializable
-@OptIn(ExperimentalSerializationApi::class)
 data class JsonLoli(
     var id: Int,
     @JsonNames("file_url")
@@ -98,6 +161,18 @@ data class JsonLoli(
     var rating: String,
     var tags: String
 )
+enum class TagOrder {
+    DATE, COUNT, NAME
+}
+@Serializable
+data class JsonTag(
+    var id: Int,
+    var name: String,
+    @JsonNames("post_count")
+    var postCount: Int,
+    @JsonNames("tag_type")
+    val tagType: Int
+)
 class Loli(
     val id: Int,
     val url: String,
@@ -106,7 +181,12 @@ class Loli(
     val tags: String,
     val rating: String
 )
-
+class Tag(
+    val id: Int,
+    val name: String,
+    val postCount: Int,
+    val tagType: Int
+)
 /**
  * @see java.net.URLStreamHandler.toExternalForm
  */
