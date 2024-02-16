@@ -2,6 +2,8 @@ package top.mrxiaom.loliyouwant.api
 
 import kotlinx.serialization.json.*
 import org.apache.http.client.methods.HttpPost
+import org.apache.http.entity.ByteArrayEntity
+import org.apache.http.entity.ContentType
 import org.apache.http.entity.StringEntity
 import org.apache.http.impl.client.HttpClients
 import java.util.*
@@ -17,7 +19,6 @@ object TencentTranslate {
     operator fun invoke(text: List<String>, from: String = "auto", to: String = "en", key: String = clientKey): List<String> {
         val post = HttpPost("https://yi.qq.com/api/imt").apply {
             addHeader("Accept", "application/json, text/plain, */*")
-            addHeader("Accept-Encoding", "gzip, deflate, br")
             addHeader("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6")
             addHeader("Cache-Control", "no-cache")
             addHeader("Content-Type", "application/json")
@@ -50,13 +51,15 @@ object TencentTranslate {
                     put("lang", to)
                 })
             }
-            entity = StringEntity(json.toString())
+            entity = ByteArrayEntity(json.toString().toByteArray(Charsets.UTF_8), ContentType.APPLICATION_JSON)
         }
         return HttpClients.createSystem().use { http ->
-            val result = http.execute(post)
-            val resultString = result.entity.content.readBytes().toString(Charsets.UTF_8)
-            val json = Json.parseToJsonElement(resultString).jsonObject
-            json["auto_translation"]!!.jsonArray.map { it.jsonPrimitive.content }
+            http.execute(post).use { result ->
+                val resultString = result.entity.content.readBytes().toString(Charsets.UTF_8)
+
+                val json = Json.parseToJsonElement(resultString).jsonObject
+                json["auto_translation"]!!.jsonArray.map { it.jsonPrimitive.content }
+            }
         }
     }
 }
