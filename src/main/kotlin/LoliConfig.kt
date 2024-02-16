@@ -180,7 +180,7 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
     @ValueName("strict-mode")
     @ValueDescription("""
         严格模式
-        开启后将过滤掉评级为 q (分级模糊, 可疑) 的图片
+        开启后将过滤掉评级为 questionable (分级模糊, 可疑) 的图片
     """)
     val strictMode by value(true)
 
@@ -188,7 +188,7 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
     @ValueDescription("""
         使用 /loli list 命令搜索图片时的最大图片数量
     """)
-    val maxSearchCount by value(5)
+    val maxSearchCount by value(10)
 
     @ValueName("max-search-count-warn")
     @ValueDescription("""
