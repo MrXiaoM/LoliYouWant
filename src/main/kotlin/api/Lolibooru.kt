@@ -65,10 +65,8 @@ object Lolibooru {
         }
     }
 
-    fun search(api: String, text: String): List<Tag> {
-        return text.lowercase()
-            .replace(" ", "_")
-            .replace("_", "*")
+    fun split(text: String): List<String> {
+        return text
             .replace("，", ",")
             .replace("、", ",")
             .replace("。", ",")
@@ -78,7 +76,13 @@ object Lolibooru {
             .replace("\\", ",")
             .replace("|", ",")
             .split(",")
-            .mapNotNull { name ->
+    }
+
+    fun search(api: String, text: String): List<Tag> {
+        return split(text.lowercase()
+            .replace(" ", "_")
+            .replace("_", "*")
+        ).mapNotNull { name ->
             val result = search(api, "*${name.removeSurrounding("*")}*", TagOrder.COUNT, 1)
             result.maxByOrNull { it.postCount }
         }

@@ -11,9 +11,9 @@ import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.MessageReceipt
 import net.mamoe.mirai.message.data.*
 import top.mrxiaom.loliyouwant.*
-import top.mrxiaom.loliyouwant.api.BingTranslate
 import top.mrxiaom.loliyouwant.api.Loli
 import top.mrxiaom.loliyouwant.api.Lolibooru
+import top.mrxiaom.loliyouwant.api.TencentTranslate
 import top.mrxiaom.loliyouwant.utils.replace
 import java.util.regex.Pattern
 import kotlin.random.Random
@@ -69,7 +69,19 @@ object LoliCommand: CompositeCommand(
 
         // 检查是否需要翻译
         val pattern = if (Pattern.matches(".*[\u4e00-\u9fa5]+.*", text)) runCatching {
-            BingTranslate.invoke(text)
+            val key = TencentTranslate.clientKey
+
+            // 先 中译日 再 日译英，否则可能会出现 `和泉雾纱` 翻译成 `And spring fog yarn` 的情况
+            val ja = TencentTranslate(Lolibooru.split(text), "zh", "ja", key)
+            val en = TencentTranslate(ja, "ja", "en", key)
+
+            val tags = en.toMutableList()
+            // 腾讯交互翻译 日译英 喜欢用英文习惯(姓在后)书写日文人名，所以倒一倒
+            tags.addAll(en
+                .filter { it.contains(" ") }
+                .map { it.split(" ", limit = 2).reversed().joinToString(" ") }
+            )
+            tags.joinToString(",")
         }.onFailure {
             LoliYouWant.logger.warning("翻译“$text”失败: ", it)
             if (LoliConfig.recallFetchingMessage) receipt?.recallIgnoreError()
