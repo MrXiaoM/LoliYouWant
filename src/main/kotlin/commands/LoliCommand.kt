@@ -72,7 +72,7 @@ object LoliCommand: CompositeCommand(
         val pattern = if (Pattern.matches(".*[\u4e00-\u9fa5]+.*", text)) runCatching {
             val key = TencentTranslate.clientKey
 
-            // 先 中译日 再 日译英，否则可能会出现 `和泉雾纱` 翻译成 `And spring fog yarn` 的情况
+            // 先 中译日 再 日译英，否则可能会出现 `和泉纱雾` 翻译成 `And spring yarn fog` 的情况
             val ja = TencentTranslate(Lolibooru.split(text), "zh", "ja", key)
             val en = TencentTranslate(ja, "ja", "en", key)
 
