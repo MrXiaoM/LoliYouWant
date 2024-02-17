@@ -8,7 +8,7 @@ import top.mrxiaom.loliyouwant.LoliYouWant
 object LoliAdminCommand: CompositeCommand(
     owner = LoliYouWant,
     primaryName = "LoliYouWantAdmin",
-    secondaryNames = arrayOf("loliadmin"),
+    secondaryNames = arrayOf("loliadmin", "luwadmin"),
     description = "LoliYouWant 管理命令"
 ) {
     @SubCommand

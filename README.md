@@ -14,6 +14,11 @@
 
 其他功能详见配置文件。
 
+0.3.0 新增搜索功能，用户输入的关键词将会使用[腾讯交互翻译](https://yi.qq.com/zh-CN/index)进行 中译日、日译英 然后在 Lolibooru 查找相关 Tags，再获取图片。
+
+腾讯交互翻译在日文人名这方面翻译得相当不准确，如果是直接中译英，则结果是逐字翻译成英文，故先中译日再日译英。  
+目前测试`和泉纱雾`会以英文习惯把姓名倒过来 (此问题已经过特殊处理解决)，`绪山真寻`则是根本翻译不出来。这些错误导致翻译结果并不符合tag命名规则，在之后的版本会经过特殊处理尽量规避。
+
 ## 安装
 
 到 [Releases](https://github.com/MrXiaoM/LoliYouWant/releases) 下载插件并放入 plugins 文件夹进行安装
@@ -23,6 +28,10 @@
 配置文件内有详细的注释，详见 [源码](src/main/kotlin/LoliConfig.kt)  
 > 配置文件路径是  
 > `./config/top.mrxiaom.loliyouwant/config.yml`
+
+0.3.0 配置文件大改，如果你是从 0.2.x 升级到 0.3.0 的，请在升级前**备份配置文件**，升级后修改新加的选项。  
+新版本将一些配置移动了位置，比如 `/loli get` 命令的各种回复消息、超时时间、是否保存图片等通通移到了 `command` 块。  
+`keywords` 配置没有改动。
 
 ## 命令
 
@@ -35,12 +44,15 @@
 
 ## 权限
 
-| 权限                                               | 解释                 |
-|--------------------------------------------------|--------------------|
-| top.mrxiaom.loliyouwant:command.loliyouwant      | 允许使用 /loli 命令      |
-| top.mrxiaom.loliyouwant:command.loliyouwantadmin | 允许使用 /loliadmin 命令 |
-| top.mrxiaom.loliyouwant:random                   | 允许使用关键词随机图片功能      |
-| top.mrxiaom.loliyouwant:bypass.cooldown          | 无视冷却时间             |
+| 权限                                               | 解释                                 |
+|--------------------------------------------------|------------------------------------|
+| top.mrxiaom.loliyouwant:command.loliyouwant      | 允许使用 /loli 命令                      |
+| top.mrxiaom.loliyouwant:command.loliyouwantadmin | 允许使用 /loliadmin 命令                 |
+| top.mrxiaom.loliyouwant:random                   | 允许使用关键词随机图片功能                      |
+| top.mrxiaom.loliyouwant:search                   | 允许使用关键词搜索功能 (不是 /loli search 命令权限) |
+| top.mrxiaom.loliyouwant:bypass.cooldown          | 无视冷却时间                             |
+
+random 和 search 权限，即可以给群，也可以给群员，也可以给好友。如果把权限给到群，群内所有人均可使用关键词
 
 > 提示：可通过以下命令给权限  
 > ```
@@ -52,7 +64,9 @@
 > 
 ## 用法
 
-给予权限后，发送 `@机器人 来只萝莉` 即可，空格可不加，剩下的详见配置文件。
+给予 random 权限后，发送 `@机器人 来只萝莉` 即可，空格可不加，剩下的详见配置文件。
+
+给予 search 权限后，发送 `@机器人 来点绪山真寻` 即可搜索图片。在配置文件找不到关键词时，以 `来点` 开头将会触发搜索。
 
 ## 编译
 
