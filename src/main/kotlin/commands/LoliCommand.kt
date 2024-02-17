@@ -14,8 +14,13 @@ import top.mrxiaom.loliyouwant.*
 import top.mrxiaom.loliyouwant.api.Loli
 import top.mrxiaom.loliyouwant.api.Lolibooru
 import top.mrxiaom.loliyouwant.api.TencentTranslate
+import top.mrxiaom.loliyouwant.config.LoliConfig
+import top.mrxiaom.loliyouwant.config.entity.CommandEconomy
+import top.mrxiaom.loliyouwant.config.entity.Keyword
+import top.mrxiaom.loliyouwant.config.split
 import top.mrxiaom.loliyouwant.utils.EnglishWordUtil
 import top.mrxiaom.loliyouwant.utils.replace
+import top.mrxiaom.loliyouwant.utils.singularize
 import java.util.regex.Pattern
 import kotlin.random.Random
 
@@ -36,16 +41,26 @@ object LoliCommand: CompositeCommand(
         val replacement: MutableMap<String, SingleMessage> = mutableMapOf("quote" to QuoteReply(fromEvent.source))
 
         // 图片数量、冷却、经济系统等需求
-        val cooldown = requirements(count, replacement) ?: return
+        val cooldown = requirements(
+            LoliConfig.command.maxSearchCount,
+            LoliConfig.command.maxSearchCountWarn,
+            LoliConfig.commandEconomy,
+            count, replacement) ?: return
 
         // 发送正在获取提示
-        val receipt = sendMessage(LoliConfig.replyFetching.replace(replacement))
+        val receipt = sendMessage(LoliConfig.command.replyFetching.replace(replacement))
 
         val text = (if (keywords[0].toIntOrNull() == null) keywords.toList()
         else keywords.drop(1))
 
         // 正式开始获取图片
-        fetchImage(count, text, receipt, cooldown, replacement)
+        fetchImage(
+            MessageHost::toReplacementCommand,
+            LoliConfig.command.recallFetchingMessage,
+            LoliConfig.command.replyFail,
+            LoliConfig.command.replySuccess,
+            count, text, receipt, cooldown, replacement
+        )
     }
 
     @SubCommand
@@ -58,10 +73,14 @@ object LoliCommand: CompositeCommand(
         val replacement: MutableMap<String, SingleMessage> = mutableMapOf("quote" to QuoteReply(fromEvent.source))
 
         // 图片数量、冷却、经济系统等需求
-        val cooldown = requirements(count, replacement) ?: return
+        val cooldown = requirements(
+            LoliConfig.commandSearch.maxSearchCount,
+            LoliConfig.commandSearch.maxSearchCountWarn,
+            LoliConfig.commandEconomySearch,
+            count, replacement) ?: return
 
         // 发送正在搜索提示
-        var receipt = sendMessage(LoliConfig.replySearching.replace(replacement))
+        var receipt = sendMessage(LoliConfig.commandSearch.replySearching.replace(replacement))
 
         val text = (if (keywords[0].toIntOrNull() == null) keywords.toList()
         else keywords.drop(1)).joinToString(" ").replace("\n", " ")
@@ -85,41 +104,49 @@ object LoliCommand: CompositeCommand(
             tags.joinToString(",").singularize()
         }.onFailure {
             LoliYouWant.logger.warning("翻译“$text”失败: ", it)
-            if (LoliConfig.recallFetchingMessage) receipt?.recallIgnoreError()
-            sendMessage(LoliConfig.replySearchTranslateFailed.replace(replacement))
+            if (LoliConfig.commandSearch.recallFetchingMessage) receipt?.recallIgnoreError()
+            sendMessage(LoliConfig.commandSearch.replySearchTranslateFailed.replace(replacement))
         }.getOrNull() ?: return else text
 
         // 正式开始搜索 tags
         val tagsFetched = Lolibooru.search(Lolibooru.baseUrl, pattern).map { it.name }
 
         // 撤回上一条提示
-        if (LoliConfig.recallFetchingMessage) receipt?.recallIgnoreError()
+        if (LoliConfig.commandSearch.recallFetchingMessage) receipt?.recallIgnoreError()
 
         // 不允许空 tags 列表
         if (tagsFetched.isEmpty()) {
-            sendMessage(LoliConfig.replySearchEmpty.replace(replacement))
+            sendMessage(LoliConfig.commandSearch.replySearchEmpty.replace(replacement))
             return
         }
 
         // 提示用户当前 tags 列表，并发送获取中提示
         replacement["tags"] = PlainText(tagsFetched.joinToString(", "))
-        receipt = sendMessage(LoliConfig.replySearchFetching.replace(replacement))
+        receipt = sendMessage(LoliConfig.commandSearch.replySearchFetching.replace(replacement))
 
         // 正式开始获取图片
-        fetchImage(count, tagsFetched, receipt, cooldown, replacement)
+        fetchImage(
+            MessageHost::toReplacementSearch,
+            LoliConfig.commandSearch.recallFetchingMessage,
+            LoliConfig.commandSearch.replyFail,
+            LoliConfig.commandSearch.replySuccess,
+            count, tagsFetched, receipt, cooldown, replacement)
     }
 }
 
 private suspend fun CommandSenderOnMessage<MessageEvent>.requirements(
+    maxSearchCount: Int,
+    maxSearchCountWarn: String,
+    commandEconomy: CommandEconomy,
     count: Int,
     replacement: MutableMap<String, SingleMessage>
 ): MutableMap<Long, Long>? {
-    if (count > LoliConfig.maxSearchCount) {
+    if (count > maxSearchCount) {
         this.sendMessage(buildMessageChain {
-            if (LoliConfig.maxSearchCountWarn.contains("\$quote")) add(QuoteReply(fromEvent.source))
+            if (maxSearchCountWarn.contains("\$quote")) add(QuoteReply(fromEvent.source))
             addAll(Regex("\\\$at").split<SingleMessage>(
-                LoliConfig.maxSearchCountWarn
-                    .replace("\$count", LoliConfig.maxSearchCount.toString())
+                maxSearchCountWarn
+                    .replace("\$count", maxSearchCount.toString())
                     .replace("\$quote", "")
             ) { s, isMatched ->
                 if (isMatched) At(fromEvent.sender.id) else PlainText(s)
@@ -144,7 +171,7 @@ private suspend fun CommandSenderOnMessage<MessageEvent>.requirements(
     }
 
     // 经济系统
-    if (!LoliConfig.commandEconomy.costMoney(
+    if (!commandEconomy.costMoney(
             group = fromEvent.subject.takeIf { it is Group }?.cast(),
             user = fromEvent.sender,
             source = fromEvent.source,
@@ -153,6 +180,10 @@ private suspend fun CommandSenderOnMessage<MessageEvent>.requirements(
 }
 
 private suspend fun CommandSenderOnMessage<MessageEvent>.fetchImage(
+    replacementFunction: (Loli, Contact, Keyword?) -> Map<String, SingleMessage>,
+    recallFetchingMessage: Boolean,
+    replyFail: String,
+    replySuccess: String,
     count: Int,
     tagsFetched: List<String>,
     receipt: MessageReceipt<Contact>?,
@@ -176,8 +207,8 @@ private suspend fun CommandSenderOnMessage<MessageEvent>.fetchImage(
     }
     // 列表为空则获取失败
     if (lolies.isEmpty()) {
-        if (LoliConfig.recallFetchingMessage) receipt?.recallIgnoreError()
-        sendMessage(LoliConfig.replyFail.replace(replacement))
+        if (recallFetchingMessage) receipt?.recallIgnoreError()
+        sendMessage(replyFail.replace(replacement))
 
         cooldown[fromEvent.subject.id] = System.currentTimeMillis() + LoliConfig.failCooldown * 1000
         return
@@ -188,35 +219,19 @@ private suspend fun CommandSenderOnMessage<MessageEvent>.fetchImage(
         for (loli in lolies) {
             forward.add(
                 fromEvent.bot,
-                LoliConfig.replySuccess.replace(replacement.plus(
-                    loli.toReplacement(fromEvent.sender, null)
+                replySuccess.replace(replacement.plus(
+                    replacementFunction(loli, fromEvent.sender, null)
                 )),
                 (System.currentTimeMillis() / 1000).toInt()
             )
         }
         sendMessage(forward.build())
     } else {
-        sendMessage(LoliConfig.replySuccess.replace(replacement.plus(
-            lolies[0].toReplacement(fromEvent.sender, null)
-        )))
+        sendMessage(
+            replySuccess.replace(replacement.plus(
+                replacementFunction(lolies[0], fromEvent.sender, null)
+            ))
+        )
     }
-    if (LoliConfig.recallFetchingMessage) receipt?.recallIgnoreError()
-}
-
-fun String.singularize(): String {
-    val s = this
-    return buildString {
-        var i = 0
-        val m = Pattern.compile("[A-Za-z]+").matcher(s)
-        while (m.find()) {
-            val first = m.start()
-            val last = m.end()
-            if (first > i) append(s.substring(i, first))
-            append(EnglishWordUtil.singularize(s.substring(first, last)))
-            i = last
-        }
-        if (i < s.length) {
-            append(s.substring(i))
-        }
-    }
+    if (recallFetchingMessage) receipt?.recallIgnoreError()
 }

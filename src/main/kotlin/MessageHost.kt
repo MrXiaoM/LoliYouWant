@@ -4,6 +4,7 @@ import net.mamoe.mirai.console.permission.Permission
 import net.mamoe.mirai.console.permission.PermissionService.Companion.testPermission
 import net.mamoe.mirai.console.permission.PermitteeId
 import net.mamoe.mirai.console.permission.PermitteeId.Companion.permitteeId
+import net.mamoe.mirai.console.util.cast
 import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.User
@@ -11,12 +12,15 @@ import net.mamoe.mirai.event.EventHandler
 import net.mamoe.mirai.event.SimpleListenerHost
 import net.mamoe.mirai.event.events.FriendMessageEvent
 import net.mamoe.mirai.event.events.GroupMessageEvent
+import net.mamoe.mirai.event.events.MessageEvent
 import net.mamoe.mirai.message.MessageReceipt
 import net.mamoe.mirai.message.data.*
 import top.mrxiaom.loliyouwant.api.Loli
 import top.mrxiaom.loliyouwant.api.Lolibooru
 import top.mrxiaom.loliyouwant.api.browserLikeUrlEncode
 import top.mrxiaom.loliyouwant.api.urlDecode
+import top.mrxiaom.loliyouwant.config.LoliConfig
+import top.mrxiaom.loliyouwant.config.entity.Keyword
 import top.mrxiaom.loliyouwant.utils.PrepareUploadImage
 import top.mrxiaom.loliyouwant.utils.replace
 import java.io.File
@@ -28,63 +32,48 @@ object MessageHost : SimpleListenerHost() {
     @EventHandler
     suspend fun onGroupMessage(event: GroupMessageEvent) {
         // 权限
-        if (!LoliConfig.enableGroups.contains(event.group.id) && !anyHasPerm(
+        if (LoliConfig.enableGroups.contains(event.group.id) || anyHasPerm(
                 LoliYouWant.PERM_RANDOM,
                 event.group,
                 event.sender
             )
-        ) return
-
-        // 捕捉关键词
-        val at = event.message.filterIsInstance<At>().any { it.target == event.bot.id }
-        val keyword = LoliConfig.resolveKeyword(event.message, at) ?: return
-
-        val replacement = mutableMapOf("quote" to QuoteReply(event.source), "at" to At(event.sender))
-
-        // 冷却
-        if (!anyHasPerm(LoliYouWant.PERM_BYPASS_COOLDOWN, event.group, event.sender)) {
-            val cd = LoliYouWant.cooldown.getOrDefault(event.group.id, 0)
-            if (cd >= System.currentTimeMillis()) {
-                replacement["cd"] = PlainText(((cd - System.currentTimeMillis()) / 1000L).toString())
-                event.group.sendMessage(LoliConfig.replyCooldown.replace(replacement))
+        ) {
+            // 捕捉关键词
+            val at = event.message.filterIsInstance<At>().any { it.target == event.bot.id }
+            val keyword = LoliConfig.resolveKeyword(event.message, at)
+            if (keyword != null) {
+                executeKeyword(event, LoliYouWant.cooldownFriend, keyword)
                 return
             }
-
-            // 无权限时才设置冷却
-            LoliYouWant.cooldown[event.group.id] = System.currentTimeMillis() + LoliConfig.cooldown * 1000
         }
-
-        // 经济系统
-        if (!keyword.costMoney(event.group, event.sender, event.source)) return
-
-        // 获取图片并发送
-        val result =
-            if (keyword.count > 1) sendLoliPictureCollection(event.group, keyword, replacement) else sendLoliPicture(
-                event.group,
-                keyword,
-                replacement
-            )
-        if (keyword.recallFetchingMessage) result.second.recallIgnoreError()
-        if (!result.first) {
-            event.group.sendMessage(keyword.replyFail.replace(replacement))
-            LoliYouWant.cooldown[event.group.id] = System.currentTimeMillis() + LoliConfig.failCooldown * 1000
-        }
+        // TODO: 关键词搜索
     }
 
     @EventHandler
     suspend fun onFriendMessage(event: FriendMessageEvent) {
         // 权限
-        if (!anyHasPerm(LoliYouWant.PERM_RANDOM, event.sender)) return
+        if (anyHasPerm(LoliYouWant.PERM_RANDOM, event.sender)) {
+            // 捕捉关键词
+            val at = event.message.filterIsInstance<At>().any { it.target == event.bot.id }
+            val keyword = LoliConfig.resolveKeyword(event.message, at)
+            if (keyword != null) {
+                executeKeyword(event, LoliYouWant.cooldownFriend, keyword)
+                return
+            }
+        }
+        // TODO: 关键词搜索
+    }
 
-        // 捕捉关键词
-        val at = event.message.filterIsInstance<At>().any { it.target == event.bot.id }
-        val keyword = LoliConfig.resolveKeyword(event.message, at) ?: return
-
+    private suspend fun executeKeyword(
+        event: MessageEvent,
+        cooldown: MutableMap<Long, Long>,
+        keyword: Keyword
+    ) {
         val replacement = mutableMapOf<String, SingleMessage>("quote" to QuoteReply(event.source))
 
         // 冷却
-        if (!anyHasPerm(LoliYouWant.PERM_BYPASS_COOLDOWN, event.sender)) {
-            val cd = LoliYouWant.cooldownFriend.getOrDefault(event.sender.id, 0)
+        if (!anyHasPerm(LoliYouWant.PERM_BYPASS_COOLDOWN, event.subject, event.sender)) {
+            val cd = cooldown.getOrDefault(event.subject.id, 0)
             if (cd >= System.currentTimeMillis()) {
                 replacement["cd"] = PlainText(((cd - System.currentTimeMillis()) / 1000L).toString())
                 event.sender.sendMessage(LoliConfig.replyCooldown.replace(replacement))
@@ -92,55 +81,25 @@ object MessageHost : SimpleListenerHost() {
             }
 
             // 无权限时才设置冷却
-            LoliYouWant.cooldownFriend[event.sender.id] = System.currentTimeMillis() + LoliConfig.cooldown * 1000
+            cooldown[event.subject.id] = System.currentTimeMillis() + LoliConfig.cooldown * 1000
         }
 
         // 经济系统
-        if (!keyword.costMoney(null, event.sender, event.source)) return
+        if (!keyword.costMoney(event.subject.takeIf { it is Group }?.cast(), event.sender, event.source)) return
 
         // 获取图片并发送
-        val result =
-            if (keyword.count > 1) sendLoliPictureCollection(event.friend, keyword, replacement) else sendLoliPicture(
-                event.sender,
-                keyword,
-                replacement
-            )
+        val result = fetchLoli(event.subject, keyword, replacement)
+
         if (keyword.recallFetchingMessage) result.second.recallIgnoreError()
         if (!result.first) {
             event.sender.sendMessage(keyword.replyFail.replace(replacement))
-            LoliYouWant.cooldownFriend[event.friend.id] = System.currentTimeMillis() + LoliConfig.failCooldown * 1000
+            cooldown[event.subject.id] = System.currentTimeMillis() + LoliConfig.failCooldown * 1000
         }
     }
 
-    private suspend fun sendLoliPicture(
+    private suspend fun fetchLoli(
         contact: Contact,
-        keyword: LoliConfig.Keyword,
-        replacement: MutableMap<String, SingleMessage>
-    ): Pair<Boolean, MessageReceipt<Contact>> {
-        val receipt = contact.sendMessage(keyword.replyFetching.replace(replacement))
-
-        val tags = keyword.tags.resolveTagsParams()
-        val loli = run {
-            var count = keyword.retryTimes
-            var result: Loli? = null
-            while (result == null && count > 0) {
-                result = LoliYouWant.searchLolis(
-                    Lolibooru.get(40, Random.nextInt(1, 11), tags)
-                ).randomOrNull()
-                count--
-            }
-            result
-        } ?: return Pair(false, receipt)
-
-        replacement.putAll(loli.toReplacement(contact, keyword))
-
-        contact.sendMessage(keyword.replySuccess.replace(replacement))
-        return Pair(true, receipt)
-    }
-
-    private suspend fun sendLoliPictureCollection(
-        contact: Contact,
-        keyword: LoliConfig.Keyword,
+        keyword: Keyword,
         defReplacement: MutableMap<String, SingleMessage>
     ): Pair<Boolean, MessageReceipt<Contact>> {
         val receipt = contact.sendMessage(keyword.replyFetching.replace(defReplacement))
@@ -159,26 +118,61 @@ object MessageHost : SimpleListenerHost() {
             count--
         }
         if (lolies.isEmpty()) return Pair(false, receipt)
-
-        val forward = ForwardMessageBuilder(contact.bot.asFriend)
-
-        for (loli in lolies) {
-            val replacement = defReplacement.toMutableMap()
-            replacement.putAll(loli.toReplacement(contact, keyword))
-
-            forward.add(
-                contact.bot,
-                keyword.replySuccess.replace(replacement),
-                (System.currentTimeMillis() / 1000).toInt()
+        if (keyword.count > 1) {
+            val forward = ForwardMessageBuilder(contact.bot.asFriend)
+            for (loli in lolies) {
+                val replacement = defReplacement.plus(toReplacementCommand(loli, contact, keyword))
+                forward.add(
+                    contact.bot,
+                    keyword.replySuccess.replace(replacement),
+                    (System.currentTimeMillis() / 1000).toInt()
+                )
+            }
+            contact.sendMessage(forward.build())
+        } else {
+            contact.sendMessage(
+                keyword.replySuccess.replace(defReplacement.plus(
+                    toReplacementCommand(lolies[0], contact, null)
+                ))
             )
         }
-        contact.sendMessage(forward.build())
         return Pair(true, receipt)
+    }
+
+    fun toReplacementCommand(loli: Loli, contact: Contact, keyword: Keyword? = null): Map<String, SingleMessage> {
+        return loli.toReplacement0(
+            contact,
+            LoliConfig.command.quality,
+            LoliConfig.command.imageFailDownload,
+            LoliConfig.command.timeout,
+            LoliConfig.command.download,
+            LoliConfig.command.overrideDownloadPath,
+            keyword
+        )
+    }
+    fun toReplacementSearch(loli: Loli, contact: Contact, keyword: Keyword? = null): Map<String, SingleMessage> {
+        return loli.toReplacement0(
+            contact,
+            LoliConfig.commandSearch.quality,
+            LoliConfig.commandSearch.imageFailDownload,
+            LoliConfig.commandSearch.timeout,
+            LoliConfig.commandSearch.download,
+            LoliConfig.commandSearch.overrideDownloadPath,
+            keyword
+        )
     }
 }
 
-fun Loli.toReplacement(contact: Contact, keyword: LoliConfig.Keyword? = null): Map<String, SingleMessage> {
-    val picUrl = browserLikeUrlEncode(when (keyword?.quality ?: LoliConfig.quality) {
+private fun Loli.toReplacement0(
+    contact: Contact,
+    quality: String,
+    imageFailDownload: String,
+    timeout: Int,
+    download: Boolean,
+    overrideDownloadPath: String,
+    keyword: Keyword? = null
+): Map<String, SingleMessage> {
+    val picUrl = browserLikeUrlEncode(when (keyword?.quality ?: quality) {
         "FILE" -> url
         "PREVIEW" -> urlPreview
         else -> urlSample
@@ -193,12 +187,12 @@ fun Loli.toReplacement(contact: Contact, keyword: LoliConfig.Keyword? = null): M
         "rating" to PlainText(rating),
         "pic" to PrepareUploadImage.url(
             contact, picUrl,
-            keyword?.imageFailDownload ?: LoliConfig.imageFailDownload,
-            keyword?.timeout ?: LoliConfig.timeout
+            keyword?.imageFailDownload ?: imageFailDownload,
+            keyword?.timeout ?: timeout
         ) { input ->
-            if (!(keyword?.download ?: LoliConfig.download)) return@url input
+            if (!(keyword?.download ?: download)) return@url input
             val folder =
-                LoliYouWant.resolveDataFile((keyword?.overrideDownloadPath ?: LoliConfig.overrideDownloadPath)
+                LoliYouWant.resolveDataFile((keyword?.overrideDownloadPath ?: overrideDownloadPath)
                     .replace("\\", "/").removeSurrounding("/"))
             if (!folder.exists()) folder.mkdirs()
             val file = File(folder, urlDecode(picUrl).substringAfterLast('/'))

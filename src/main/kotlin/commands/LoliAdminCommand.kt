@@ -2,7 +2,7 @@ package top.mrxiaom.loliyouwant.commands
 
 import net.mamoe.mirai.console.command.CommandSender
 import net.mamoe.mirai.console.command.CompositeCommand
-import top.mrxiaom.loliyouwant.LoliConfig
+import top.mrxiaom.loliyouwant.config.LoliConfig
 import top.mrxiaom.loliyouwant.LoliYouWant
 
 object LoliAdminCommand: CompositeCommand(

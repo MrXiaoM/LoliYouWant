@@ -4,7 +4,7 @@ import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.contact.User
 import net.mamoe.mirai.message.data.*
 import net.mamoe.mirai.utils.MiraiLogger
-import top.mrxiaom.loliyouwant.split
+import top.mrxiaom.loliyouwant.config.split
 import xyz.cssxsh.mirai.economy.EconomyService
 import xyz.cssxsh.mirai.economy.economy
 import xyz.cssxsh.mirai.economy.globalEconomy

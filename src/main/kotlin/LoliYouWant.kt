@@ -16,6 +16,7 @@ import top.mrxiaom.loliyouwant.api.Loli
 import top.mrxiaom.loliyouwant.api.Lolibooru
 import top.mrxiaom.loliyouwant.commands.LoliAdminCommand
 import top.mrxiaom.loliyouwant.commands.LoliCommand
+import top.mrxiaom.loliyouwant.config.LoliConfig
 import top.mrxiaom.loliyouwant.utils.EconomyHolder
 
 object LoliYouWant : KotlinPlugin(

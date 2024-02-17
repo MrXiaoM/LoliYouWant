@@ -8,6 +8,7 @@ import net.mamoe.mirai.utils.ExternalResource
 import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
 import java.io.InputStream
 import java.net.URL
+import java.util.regex.Pattern
 
 interface PrepareMessage : SingleMessage {
     suspend fun generateMessage(): SingleMessage
@@ -95,3 +96,23 @@ suspend fun String.replace(replacements: Map<String, SingleMessage>): MessageCha
     }
     return message.build()
 }
+
+
+fun String.singularize(): String {
+    val s = this
+    return buildString {
+        var i = 0
+        val m = Pattern.compile("[A-Za-z]+").matcher(s)
+        while (m.find()) {
+            val first = m.start()
+            val last = m.end()
+            if (first > i) append(s.substring(i, first))
+            append(EnglishWordUtil.singularize(s.substring(first, last)))
+            i = last
+        }
+        if (i < s.length) {
+            append(s.substring(i))
+        }
+    }
+}
+

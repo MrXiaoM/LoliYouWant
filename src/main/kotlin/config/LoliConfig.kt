@@ -1,4 +1,4 @@
-package top.mrxiaom.loliyouwant
+package top.mrxiaom.loliyouwant.config
 
 import kotlinx.serialization.Serializable
 import net.mamoe.mirai.console.data.*
@@ -9,157 +9,14 @@ import net.mamoe.mirai.message.data.MessageChain
 import net.mamoe.mirai.message.data.MessageSource
 import net.mamoe.mirai.message.data.PlainText
 import net.mamoe.yamlkt.Comment
+import top.mrxiaom.loliyouwant.LoliYouWant
+import top.mrxiaom.loliyouwant.config.entity.CommandEconomy
+import top.mrxiaom.loliyouwant.config.entity.CommandProperties
+import top.mrxiaom.loliyouwant.config.entity.CommandSearchProperties
+import top.mrxiaom.loliyouwant.config.entity.Keyword
 import top.mrxiaom.loliyouwant.utils.EconomyHolder
 
 object LoliConfig : ReadOnlyPluginConfig("config") {
-    @Serializable
-    data class Keyword(
-        @Comment("指定该关键词包括的 Tag")
-        val tags: List<String> = listOf(),
-        @Comment("""
-        获取图片的最大数量
-        接口每次只能申请40张图片, 过滤器会过滤掉一部分, 故该数量仅供限制最多发送数量
-        若数量大于1, 将通过合并转发发送
-        """)
-        val count: Int = 1,
-        @Comment("单张图片的连接超时时间 (秒)")
-        val timeout: Int = 60,
-        @Comment("是否需要 @ 机器人来触发随机发图")
-        val at: Boolean = true,
-        @Comment("获取失败时重试次数")
-        val retryTimes: Int = 5,
-        @Comment("""
-        返回图片的画质
-        PREVIEW - 低画质
-        SAMPLE - 中等画质
-        FILE - 原画质
-        """)
-        val quality: String = "SAMPLE",
-        @Comment("""
-        获取成功的回复信息
-        ${'$'}at @发送者
-        ${'$'}quote 回复发送者
-        ${'$'}id 图片ID
-        ${'$'}previewUrl 图片直链 (预览画质)
-        ${'$'}sampleUrl 图片直链 (中等画质)
-        ${'$'}fileUrl 图片直链 (原画质)
-        ${'$'}url 图片直链 (发送的图所选画质)
-        ${'$'}tags 图片标签
-        ${'$'}rating 图片分级, q (Questionable) 或者 s (Safe)
-        ${'$'}pic 下载的图片, 下载失败时用 image-fail-download 的值代替
-        """)
-        val replySuccess: String = "\$pic\n图片地址: https://lolibooru.moe/post/show/\$id\n标签: \$tags",
-        @Comment("图片下载失败时的代替文字")
-        val imageFailDownload: String = "「图片下载失败」",
-        @Comment("""
-        获取失败的回复信息
-        ${'$'}at @发送者
-        ${'$'}quote 回复发送者
-        """)
-        val replyFail: String = "\$quote获取失败, 稍后再试吧",
-        @Comment("""
-        正在获取的回复信息
-        ${'$'}at @发送者
-        ${'$'}quote 回复发送者
-        """)
-        val replyFetching: String = "\$quote正在获取中, 请稍等",
-        @Comment("图片获取完成后撤回正在获取的回复信息")
-        val recallFetchingMessage: Boolean = true,
-        @Comment("是否顺便保存图片到本地 (data 文件夹)")
-        val download: Boolean = false,
-        @Comment("重写图片保存路径, 该路径相对于 data/top.mrxiaom.loliyouwant/")
-        val overrideDownloadPath: String = "",
-        @Comment("""
-        执行命令所需金钱的货币类型
-        留空为不花费金钱
-        该功能需要安装 mirai-economy-core 插件生效
-        """)
-        val costMoneyCurrency: String = "mirai-coin",
-        @Comment("执行命令所需金钱")
-        val costMoney: Double = 10.0,
-        @Comment("""
-        是否从全局上下文扣除金钱
-        若关闭该项, 将在用户执行命令所在群的上下文扣除金钱
-        私聊执行命令将强制使用全局上下文
-        """)
-        val costMoneyGlobal: Boolean = false,
-        @Comment("""
-        执行命令金钱不足提醒
-        ${'$'}at 为 @ 发送者
-        ${'$'}quote 为回复发送者
-        ${'$'}cost 为需要花费的金钱
-        """)
-        val costMoneyNotEnough: String ="\$quote你没有足够的 Mirai 币 (\$cost) 来执行该命令!"
-    ) {
-        suspend fun costMoney(
-            group: Group?,
-            user: User,
-            source: MessageSource
-        ): Boolean = EconomyHolder.costMoney(
-            group,
-            user,
-            source,
-            costMoney,
-            costMoneyGlobal,
-            costMoneyCurrency,
-            costMoneyNotEnough
-        )
-    }
-
-    @Serializable
-    data class CommandEconomy(
-        @Comment("""
-        执行命令所需金钱的货币类型
-        留空为不花费金钱
-        该功能需要安装 mirai-economy-core 插件生效
-        """)
-        val costMoneyCurrency: String = "mirai-coin",
-        @Comment("""
-        执行命令所需金钱单价
-        最终价格为 {costMoney} * {图片张数} * {costMoneyPictureMultiplier}
-        """)
-        val costMoney: Double = 10.0,
-        @Comment("""
-        每张图片的价格乘数
-        如果设置为0或负数，最终价格为 {costMoney}
-        """)
-        val costMoneyPictureMultiplier: Double = 1.0,
-        @Comment("""
-        是否从全局上下文扣除金钱
-        若关闭该项, 将在用户执行命令所在群的上下文扣除金钱
-        私聊执行命令将强制使用全局上下文
-        """)
-        val costMoneyGlobal: Boolean = false,
-        @Comment("""
-        执行命令金钱不足提醒
-        ${'$'}at 为 @ 发送者
-        ${'$'}quote 为回复发送者
-        ${'$'}cost 为需要花费的金钱
-        """)
-        val costMoneyNotEnough: String ="\$quote你没有足够的 Mirai 币 (\$cost) 来执行该命令!"
-    ) {
-        suspend fun costMoney(
-            group: Group?,
-            user: User,
-            source: MessageSource,
-            count: Int
-        ): Boolean {
-            val money: Double = if (costMoneyPictureMultiplier > 0) {
-                costMoney * count * costMoneyPictureMultiplier
-            } else {
-                costMoney
-            }
-            return EconomyHolder.costMoney(
-                group,
-                user,
-                source,
-                money,
-                costMoneyGlobal,
-                costMoneyCurrency,
-                costMoneyNotEnough
-            )
-        }
-    }
 
     @ValueName("api-base-url")
     @ValueDescription("""
@@ -183,51 +40,6 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
         开启后将过滤掉评级为 questionable (分级模糊, 可疑) 的图片
     """)
     val strictMode by value(true)
-
-    @ValueName("max-search-count")
-    @ValueDescription("""
-        使用 /loli list 命令搜索图片时的最大图片数量
-    """)
-    val maxSearchCount by value(10)
-
-    @ValueName("max-search-count-warn")
-    @ValueDescription("""
-        使用 /loli list 命令搜索图片超出最大图片数量时的警告
-        ${'$'}at 为 @ 发送者
-        ${'$'}quote 为回复发送者
-        ${'$'}count 为 max-search-count 的值
-    """)
-    val maxSearchCountWarn by value("\$quote图片数量不能超过\$count")
-
-    @ValueDescription("使用 /loli get 命令获取图片, 下载失败时的代替文字")
-    val imageFailDownload by value("「图片下载失败」")
-    @ValueDescription("使用 /loli get 命令获取图片, 获取成功的回复信息")
-    val replySuccess by value("\$pic\n图片地址: https://lolibooru.moe/post/show/\$id")
-    @ValueDescription("使用 /loli get 命令获取图片, 获取失败的回复信息")
-    val replyFail by value("\$quote获取失败, 稍后再试吧")
-    @ValueDescription("使用 /loli get 命令获取图片, 正在获取的回复信息")
-    val replyFetching by value("\$quote正在获取中, 请稍等")
-
-    @ValueDescription("使用 /loli search 命令或关键词获取图片, 获取成功的回复信息")
-    val replySuccessSearch by value("\$pic\n图片地址: https://lolibooru.moe/post/show/\$id")
-    @ValueDescription("使用 /loli search 命令获取图片, 正在获取的回复信息")
-    val replySearching by value("\$quote正在搜索中, 请稍等")
-    @ValueDescription("使用 /loli search 命令获取图片, 翻译失败的回复信息")
-    val replySearchTranslateFailed by value("\$quote你的搜索关键词中存在中文，调用翻译接口失败，请重试")
-    @ValueDescription("使用 /loli search 命令获取图片, 找不到任何 tags 的回复信息")
-    val replySearchEmpty by value("\$quote使用该关键词无法找到相关的 tags")
-    @ValueDescription("使用 /loli search 命令获取图片, 正在获取的回复信息")
-    val replySearchFetching by value("\$quote指定的 tags 为 \$tags。正在获取中，请稍等")
-    @ValueDescription("使用 /loli get 命令获取图片, 获取完成后撤回正在获取的回复信息")
-    val recallFetchingMessage by value(true)
-    @ValueDescription("使用 /loli get 命令获取图片, 返回图片的画质")
-    val quality by value("SAMPLE")
-    @ValueDescription("使用 /loli get 命令获取图片, 单张图片的连接超时时间 (秒)")
-    val timeout by value(60)
-    @ValueDescription("使用 /loli get 命令获取图片, 是否顺便保存图片到本地 (data 文件夹)")
-    val download by value(false)
-    @ValueDescription("使用 /loli get 命令获取图片, 重写图片保存路径, 该路径相对于 data/top.mrxiaom.loliyouwant/")
-    val overrideDownloadPath by value("command")
 
     @ValueName("does-add-tags-to-params")
     @ValueDescription("""
@@ -300,9 +112,21 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
     @ValueDescription("使用命令获取失败时的重试次数")
     val commandRetryTimes by value(5)
 
+    @ValueName("command")
+    @ValueDescription("命令 /loli get 的相关配置")
+    val command by value(CommandProperties())
+
     @ValueName("command-economy")
-    @ValueDescription("使用命令获取图片时的经济消耗设置")
+    @ValueDescription("使用 /loli get 命令获取图片时的经济消耗设置")
     val commandEconomy by value(CommandEconomy())
+
+    @ValueName("command-search")
+    @ValueDescription("命令 /loli search 的相关配置")
+    val commandSearch by value(CommandSearchProperties())
+
+    @ValueName("command-economy-search")
+    @ValueDescription("使用 /loli search 命令获取图片时的经济消耗设置")
+    val commandEconomySearch by value(CommandEconomy())
 
     @ValueName("keywords")
     @ValueDescription("随机发图的关键词, 可自由添加")
