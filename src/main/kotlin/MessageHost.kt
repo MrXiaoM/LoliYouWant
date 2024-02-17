@@ -1,5 +1,6 @@
 package top.mrxiaom.loliyouwant
 
+import net.mamoe.mirai.console.command.CommandSender.Companion.toCommandSender
 import net.mamoe.mirai.console.permission.Permission
 import net.mamoe.mirai.console.permission.PermissionService.Companion.testPermission
 import net.mamoe.mirai.console.permission.PermitteeId
@@ -7,6 +8,7 @@ import net.mamoe.mirai.console.permission.PermitteeId.Companion.permitteeId
 import net.mamoe.mirai.console.util.cast
 import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.contact.Group
+import net.mamoe.mirai.contact.Member
 import net.mamoe.mirai.contact.User
 import net.mamoe.mirai.event.EventHandler
 import net.mamoe.mirai.event.SimpleListenerHost
@@ -19,6 +21,7 @@ import top.mrxiaom.loliyouwant.api.Loli
 import top.mrxiaom.loliyouwant.api.Lolibooru
 import top.mrxiaom.loliyouwant.api.browserLikeUrlEncode
 import top.mrxiaom.loliyouwant.api.urlDecode
+import top.mrxiaom.loliyouwant.commands.LoliCommand.search
 import top.mrxiaom.loliyouwant.config.LoliConfig
 import top.mrxiaom.loliyouwant.config.entity.Keyword
 import top.mrxiaom.loliyouwant.utils.PrepareUploadImage
@@ -31,48 +34,74 @@ object MessageHost : SimpleListenerHost() {
 
     @EventHandler
     suspend fun onGroupMessage(event: GroupMessageEvent) {
-        // 权限
-        if (LoliConfig.enableGroups.contains(event.group.id) || anyHasPerm(
-                LoliYouWant.PERM_RANDOM,
-                event.group,
-                event.sender
-            )
-        ) {
+        val configPermission = LoliConfig.enableGroups.contains(event.group.id)
+
+        // 权限 关键词
+        if (configPermission || LoliYouWant.PERM_RANDOM.anyHasPerm(
+            event.group, event.sender
+        )) {
             // 捕捉关键词
             val at = event.message.filterIsInstance<At>().any { it.target == event.bot.id }
             val keyword = LoliConfig.resolveKeyword(event.message, at)
             if (keyword != null) {
-                executeKeyword(event, LoliYouWant.cooldownFriend, keyword)
+                executeKeyword(event, keyword)
                 return
             }
         }
-        // TODO: 关键词搜索
+        // 权限 搜索
+        if (configPermission || LoliYouWant.PERM_SEARCH.anyHasPerm(
+            event.group, event.sender
+        )) {
+            val at = event.message.filterIsInstance<At>().any { it.target == event.bot.id }
+            if (LoliConfig.commandSearch.at && !at) return
+
+            val key = event.message.filterIsInstance<PlainText>().joinToString { it.content }.trim()
+            if (key.startsWith(LoliConfig.commandSearch.keywordPrefix)) {
+                executeSearch(event, key.removePrefix(LoliConfig.commandSearch.keywordPrefix))
+                return
+            }
+        }
     }
 
     @EventHandler
     suspend fun onFriendMessage(event: FriendMessageEvent) {
-        // 权限
-        if (anyHasPerm(LoliYouWant.PERM_RANDOM, event.sender)) {
+        // 权限 关键词
+        if (LoliYouWant.PERM_RANDOM.anyHasPerm(event.sender)) {
             // 捕捉关键词
             val at = event.message.filterIsInstance<At>().any { it.target == event.bot.id }
             val keyword = LoliConfig.resolveKeyword(event.message, at)
             if (keyword != null) {
-                executeKeyword(event, LoliYouWant.cooldownFriend, keyword)
+                executeKeyword(event, keyword)
                 return
             }
         }
-        // TODO: 关键词搜索
+        // 权限 搜索
+        if (LoliYouWant.PERM_SEARCH.anyHasPerm(event.sender)) {
+            val at = event.message.filterIsInstance<At>().any { it.target == event.bot.id }
+            if (LoliConfig.commandSearch.at && !at) return
+
+            val key = event.message.filterIsInstance<PlainText>().joinToString { it.content }.trim()
+            if (key.startsWith(LoliConfig.commandSearch.keywordPrefix)) {
+                executeSearch(event, key.removePrefix(LoliConfig.commandSearch.keywordPrefix))
+                return
+            }
+        }
     }
+
+    private suspend fun executeSearch(
+        event: MessageEvent,
+        keyword: String
+    ) = event.toCommandSender().search(*keyword.trim().split(" ").toTypedArray())
 
     private suspend fun executeKeyword(
         event: MessageEvent,
-        cooldown: MutableMap<Long, Long>,
         keyword: Keyword
     ) {
         val replacement = mutableMapOf<String, SingleMessage>("quote" to QuoteReply(event.source))
 
+        val cooldown = if (event.sender is Member) LoliYouWant.cooldown else LoliYouWant.cooldownFriend
         // 冷却
-        if (!anyHasPerm(LoliYouWant.PERM_BYPASS_COOLDOWN, event.subject, event.sender)) {
+        if (!LoliYouWant.PERM_BYPASS_COOLDOWN.anyHasPerm(event.subject, event.sender)) {
             val cd = cooldown.getOrDefault(event.subject.id, 0)
             if (cd >= System.currentTimeMillis()) {
                 replacement["cd"] = PlainText(((cd - System.currentTimeMillis()) / 1000L).toString())
@@ -215,6 +244,6 @@ val Contact.permitteeIdOrNull: PermitteeId?
         else -> null
     }
 
-fun anyHasPerm(p: Permission, vararg users: Contact): Boolean = users.any {
-    p.testPermission(it.permitteeIdOrNull ?: return@any false)
+fun Permission.anyHasPerm(vararg users: Contact): Boolean = users.any {
+    testPermission(it.permitteeIdOrNull ?: return@any false)
 }

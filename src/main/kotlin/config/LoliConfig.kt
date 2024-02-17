@@ -157,7 +157,7 @@ object LoliConfig : ReadOnlyPluginConfig("config") {
     val failCooldown by value(3)
 
     fun resolveKeyword(message: MessageChain, at: Boolean): Keyword? {
-        val key = message.filterIsInstance<PlainText>().joinToString { it.content }.trimStart().trimEnd()
+        val key = message.filterIsInstance<PlainText>().joinToString { it.content }.trim()
         val keyword = keywords[key] ?: return null
         return if (keyword.at && !at) null else keyword
     }

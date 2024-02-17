@@ -97,7 +97,6 @@ suspend fun String.replace(replacements: Map<String, SingleMessage>): MessageCha
     return message.build()
 }
 
-
 fun String.singularize(): String {
     val s = this
     return buildString {

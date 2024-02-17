@@ -46,11 +46,13 @@ object LoliYouWant : KotlinPlugin(
     )
     internal val blacklistTags = mutableListOf<String>()
     lateinit var PERM_RANDOM: Permission
+    lateinit var PERM_SEARCH: Permission
     lateinit var PERM_BYPASS_COOLDOWN: Permission
     internal val cooldown = mutableMapOf<Long, Long>()
     internal val cooldownFriend = mutableMapOf<Long, Long>()
     override fun onEnable() {
         PERM_RANDOM = PermissionService.INSTANCE.register(PermissionId(id, "random"), "关键词随机发图权限")
+        PERM_SEARCH = PermissionService.INSTANCE.register(PermissionId(id, "search"), "关键词搜索权限(不是 /loli search 命令)")
         PERM_BYPASS_COOLDOWN = PermissionService.INSTANCE.register(PermissionId(id, "bypass.cooldown"), "绕过冷却时间")
 
         logger.info(when (EconomyHolder.hasEconomyCorePlugin) {

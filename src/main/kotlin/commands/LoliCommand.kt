@@ -158,7 +158,7 @@ private suspend fun CommandSenderOnMessage<MessageEvent>.requirements(
 
     val cooldown = if (fromEvent.sender is Member) LoliYouWant.cooldown else LoliYouWant.cooldownFriend
     // 冷却
-    if (!anyHasPerm(LoliYouWant.PERM_BYPASS_COOLDOWN, fromEvent.subject, fromEvent.sender)) {
+    if (!LoliYouWant.PERM_BYPASS_COOLDOWN.anyHasPerm(fromEvent.subject, fromEvent.sender)) {
         val cd = cooldown.getOrDefault(fromEvent.subject.id, 0)
         if (cd >= System.currentTimeMillis()) {
             replacement["cd"] = PlainText(((cd - System.currentTimeMillis()) / 1000L).toString())
