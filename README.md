@@ -1,3 +1,9 @@
+# Lolibooru 似乎已关闭
+
+![lolibooru](lolibooru.jpg)
+
+Lolibooru 截至2024年6月，已有超过3个月无法正常访问，铭记传奇图片社区牢Loli。
+
 # LoliYouWant
 
 > 「你想要的插件」系列作品
